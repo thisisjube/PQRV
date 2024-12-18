@@ -3,8 +3,7 @@
 .globl vmul64
 .align 2
 vmul64:
-    li a3, 128
-    vsetvli a3, a3, e64, m1, tu, mu
+    vsetivli a3, 2, e64, m1, tu, mu
 
     vle64.v v0, (a0)
     vle64.v v1, (a1)
@@ -20,8 +19,7 @@ vmul64:
 .globl test_vwmul
 .align 2
 test_vwmul:
-    li a3, 128
-    vsetvli a3, a3, e16, m1, tu, mu
+    vsetivli a3, 8, e16, m1, tu, mu
 
     vle16.v v0, (a0)
     vle16.v v1, (a1)

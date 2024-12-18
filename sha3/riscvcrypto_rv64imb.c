@@ -6,6 +6,7 @@ void Keccak(unsigned int rate, unsigned int capacity,
             unsigned long long int inputByteLen,
             unsigned char delimitedSuffix, unsigned char *output,
             unsigned long long int outputByteLen);
+void KeccakF1600_StatePermute(uint64_t *s);
 
 #define readLane(x, y) (((uint64_t *)state)[index(x, y)])
 #define writeLane(x, y, lane) (((uint64_t *)state)[index(x, y)]) = (lane)
@@ -45,7 +46,7 @@ static inline uint64_t andn(uint64_t rs1, uint64_t rs2)
  */
 void KeccakF1600_StatePermute(uint64_t *s)
 {
-    int round, y;
+    int round;
 
     for (round = 0; round < 24; round++) {
         uint64_t C0, C1, C2, C3;
