@@ -1,2095 +1,863 @@
 #include "consts.h"
 
-// in0 = [a0~a3, a4~a7], in1 = [a8~a11, a12~a15]
-// out0= [a0~a3, a8~a11],out1= [a4~a7,  a12~a15]
-// related masks are ready for using
-// v0: _MASK_11110000, vt0/vt1: _MASK_45674567/_MASK_01230123
-.macro shuffle4 out0, out1, in0, in1, vt0, vt1
-    vrgather.vv \out1, \in0, \vt0
-    vrgather.vv \out0, \in1, \vt1
-    vmerge.vvm \out1, \in1, \out1, v0
-    vmerge.vvm \out0, \out0, \in0, v0
+// shuffle4
+# [a0~a3, a4~a7],[a8~a11, a12~a15] -> 
+# [a0~a3, a8~a11],[a4~a7,  a12~a15]
+// shuffle2
+# [a0~a1,a2~a3,a8~a9,a10~a11],[a4~a5,a6~a7,a12~a13,a14~a15] ->
+# [a0~a1,a4~a5,a8~a9,a12~a13],[a2~a3,a6~a7,a10~a11,a14~a15]
+// shuffle1
+# [a0~a1,a4~a5,a8~a9,a12~a13],[a2~a3,a6~a7,a10~a11,a14~a15] ->
+# [a0,a2,a4,a6,a8,a10,a12,a14],[a1,a3,a5,a7,a9,a11,a13,a15]
+.macro shuffle_x2 in0_0, in0_1, in1_0, in1_1, \
+        tm0_0, tm0_1, tm1_0, tm1_1, vm0, vm1
+    vrgather.vv \tm0_0, \in0_1, \vm0;       vrgather.vv \tm0_1, \in0_0, \vm1
+    vrgather.vv \tm1_0, \in1_1, \vm0;       vrgather.vv \tm1_1, \in1_0, \vm1
+    vmerge.vvm  \in0_0, \tm0_0, \in0_0, v0; vmerge.vvm  \in0_1, \in0_1, \tm0_1, v0
+    vmerge.vvm  \in1_0, \tm1_0, \in1_0, v0; vmerge.vvm  \in1_1, \in1_1, \tm1_1, v0
 .endm
 
-// in0 = [a0~a1,a2~a3,a8~a9,a10~a11], in1 = [a4~a5,a6~a7,a12~a13,a14~a15]
-// out0= [a0~a1,a4~a5,a8~a9,a12~a13], out1= [a2~a3,a6~a7,a10~a11,a14~a15]
-// related masks are ready for using
-// v0: _MASK_11001100, vmt0/vmt1: _MASK_00010045/_MASK_23006700
-.macro shuffle2 out0, out1, in0, in1, vmt0, vmt1
-    vrgather.vv \out0, \in1, \vmt0
-    vrgather.vv \out1, \in0, \vmt1
-    vmerge.vvm  \out0, \out0, \in0, v0
-    vmerge.vvm  \out1, \in1, \out1, v0
-.endm
-
-// in0/1 = [a0~a1,a4~a5,a8~a9,a12~a13], [a2~a3,a6~a7,a10~a11,a14~a15]
-// out0/1= [a0,a2,a4,a6,a8,a10,a12,a14],[a1,a3,a5,a7,a9,a11,a13,a15]
-// related masks are ready for using
-// v0: _MASK_10101010, vmt0: _MASK_10325476
-.macro shuffle1 out0, out1, in0, in1, vmt0
-    vrgather.vv \out0, \in1, \vmt0
-    vrgather.vv \out1, \in0, \vmt0
-    vmerge.vvm  \out0, \out0, \in0, v0
-    vmerge.vvm  \out1, \in1, \out1, v0
+.macro shuffle_o_x2 ou0_0, ou0_1, ou1_0, ou1_1, \
+        in0_0, in0_1, in1_0, in1_1, vm0, vm1
+    vrgather.vv \ou0_0, \in0_1, \vm0;       vrgather.vv \ou1_0, \in1_1, \vm0
+    vrgather.vv \ou0_1, \in0_0, \vm1;       vrgather.vv \ou1_1, \in1_0, \vm1
+    vmerge.vvm  \ou0_0, \ou0_0, \in0_0, v0; vmerge.vvm  \ou1_0, \ou1_0, \in1_0, v0
+    vmerge.vvm  \ou0_1, \in0_1, \ou0_1, v0; vmerge.vvm  \ou1_1, \in1_1, \ou1_1, v0
 .endm
 
 .macro barrettRdc in, vt0, const_v, const_q
     vmulh.vx \vt0, \in, \const_v
-    vsra.vi  \vt0, \vt0, 10
+    vssra.vi \vt0, \vt0, 10
     vmul.vx  \vt0, \vt0, \const_q
     vsub.vv  \in,  \in, \vt0
 .endm
 
-.macro barrettRdcX4 in0, in1, in2, in3, \
-        vt0, vt1, vt2, vt3, const_v, const_q
-    vmulh.vx \vt0, \in0, \const_v
-    vmulh.vx \vt1, \in1, \const_v
-    vmulh.vx \vt2, \in2, \const_v
-    vmulh.vx \vt3, \in3, \const_v
-    vsra.vi  \vt0, \vt0, 10
-    vsra.vi  \vt1, \vt1, 10
-    vsra.vi  \vt2, \vt2, 10
-    vsra.vi  \vt3, \vt3, 10
-    vmul.vx  \vt0, \vt0, \const_q
-    vmul.vx  \vt1, \vt1, \const_q
-    vmul.vx  \vt2, \vt2, \const_q
-    vmul.vx  \vt3, \vt3, \const_q
-    vsub.vv  \in0, \in0, \vt0
-    vsub.vv  \in1, \in1, \vt1
-    vsub.vv  \in2, \in2, \vt2
-    vsub.vv  \in3, \in3, \vt3
+.macro barrettRdcX2 in0, in1, vt0, vt1, const_v, const_q
+    vmulh.vx \vt0, \in0, \const_v;  vmulh.vx \vt1, \in1, \const_v
+    vssra.vi \vt0, \vt0, 10;        vssra.vi \vt1, \vt1, 10
+    vmul.vx  \vt0, \vt0, \const_q;  vmul.vx  \vt1, \vt1, \const_q
+    vsub.vv  \in0, \in0, \vt0;      vsub.vv  \in1, \in1, \vt1
 .endm
 
-.macro montMul in0, vt0, const_q, const_montsq, const_montsq_qinv
-    vmul.vx \vt0, \in0, \const_montsq_qinv
-    vmulh.vx \in0, \in0, \const_montsq
-    vmulh.vx \vt0, \vt0, \const_q
-    vsub.vv  \in0, \in0, \vt0
+.macro ct_bfu_vx va0_0, va0_1, xzeta0, xzetaqinv0, xq, vt0_0, vt0_1
+    vmul.vx  \vt0_0, \va0_1, \xzetaqinv0
+    vmulh.vx \vt0_1, \va0_1, \xzeta0
+    vmulh.vx \vt0_0, \vt0_0, \xq
+    vsub.vv  \vt0_0, \vt0_1, \vt0_0
+    vsub.vv  \va0_1, \va0_0, \vt0_0
+    vadd.vv  \va0_0, \va0_0, \vt0_0
 .endm
 
-.macro montMulX4 in0, in1, in2, in3, \
-        vt0, vt1, vt2, vt3, \
-        const_q, const_montsq, const_montsq_qinv
-    vmul.vx \vt0, \in0, \const_montsq_qinv
-    vmul.vx \vt1, \in1, \const_montsq_qinv
-    vmul.vx \vt2, \in2, \const_montsq_qinv
-    vmul.vx \vt3, \in3, \const_montsq_qinv
-    vmulh.vx \in0, \in0, \const_montsq
-    vmulh.vx \in1, \in1, \const_montsq
-    vmulh.vx \in2, \in2, \const_montsq
-    vmulh.vx \in3, \in3, \const_montsq
-    vmulh.vx \vt0, \vt0, \const_q
-    vmulh.vx \vt1, \vt1, \const_q
-    vmulh.vx \vt2, \vt2, \const_q
-    vmulh.vx \vt3, \vt3, \const_q
-    vsub.vv  \in0, \in0, \vt0
-    vsub.vv  \in1, \in1, \vt1
-    vsub.vv  \in2, \in2, \vt2
-    vsub.vv  \in3, \in3, \vt3
+.macro ct_bfu_vx_x2 va0_0, va0_1, va1_0, va1_1, \
+        xzeta0, xzetaqinv0, xzeta1, xzetaqinv1, \
+        xq, vt0_0, vt0_1, vt1_0, vt1_1
+    vmul.vx  \vt0_0, \va0_1, \xzetaqinv0;   vmul.vx  \vt1_0, \va1_1, \xzetaqinv1
+    vmulh.vx \vt0_1, \va0_1, \xzeta0;       vmulh.vx \vt1_1, \va1_1, \xzeta1
+    vmulh.vx \vt0_0, \vt0_0, \xq;           vmulh.vx \vt1_0, \vt1_0, \xq
+    vsub.vv  \vt0_0, \vt0_1, \vt0_0;        vsub.vv  \vt1_0, \vt1_1, \vt1_0
+    vsub.vv  \va0_1, \va0_0, \vt0_0;        vsub.vv  \va1_1, \va1_0, \vt1_0
+    vadd.vv  \va0_0, \va0_0, \vt0_0;        vadd.vv  \va1_0, \va1_0, \vt1_0
 .endm
 
-# The implementation with LMUL=1
-# .macro ntt_rvv_level0
-#     lh t2, (_ZETAS_EXP+0)*2(a1)
-#     addi a0, a0, (64*0+128)*2
-#     lh t1, (_ZETAS_EXP+1)*2(a1)
-#     vle16.v v8, (a0);   addi a0, a0, 16
-#     vle16.v v9, (a0);   addi a0, a0, 16
-#     vle16.v v10, (a0);  addi a0, a0, 16
-#     vle16.v v11, (a0);  addi a0, a0, 16
-#     vmul.vx v0, v8, t2
-#     vmul.vx v1, v9, t2
-#     vmul.vx v2, v10, t2
-#     vmul.vx v3, v11, t2
-#     vle16.v v12, (a0);  addi a0, a0, 16
-#     vle16.v v13, (a0);  addi a0, a0, 16
-#     vle16.v v14, (a0);  addi a0, a0, 16
-#     vle16.v v15, (a0);  addi a0, a0, -((64*0+128)*2+16*7)
-#     vmul.vx v4, v12, t2
-#     vmul.vx v5, v13, t2
-#     vmul.vx v6, v14, t2
-#     vmul.vx v7, v15, t2
-#     vle16.v v16, (a0);  addi a0, a0, 16
-#     vmulh.vx v8,  v8, t1
-#     vle16.v v17, (a0);  addi a0, a0, 16
-#     vmulh.vx v9,  v9, t1
-#     vle16.v v18, (a0);  addi a0, a0, 16
-#     vmulh.vx v10, v10, t1
-#     vle16.v v19, (a0);  addi a0, a0, 16
-#     vmulh.vx v11, v11, t1
-#     vle16.v v20, (a0);  addi a0, a0, 16
-#     vmulh.vx v12, v12, t1
-#     vle16.v v21, (a0);  addi a0, a0, 16
-#     vmulh.vx v13, v13, t1
-#     vle16.v v22, (a0);  addi a0, a0, 16
-#     vmulh.vx v14, v14, t1
-#     vle16.v v23, (a0);  addi a0, a0, -16*7
-#     vmulh.vx v15, v15, t1
-#     vmulh.vx v0, v0, t0
-#     vmulh.vx v1, v1, t0
-#     vmulh.vx v2, v2, t0
-#     vmulh.vx v3, v3, t0
-#     vsub.vv  v8,  v8,  v0
-#     vsub.vv  v9,  v9,  v1
-#     vsub.vv  v10, v10, v2
-#     vsub.vv  v11, v11, v3
-#     vmulh.vx v4, v4, t0
-#     vadd.vv  v0, v16, v8
-#     vmulh.vx v5, v5, t0
-#     vadd.vv  v1, v17, v9
-#     vmulh.vx v6, v6, t0
-#     vadd.vv  v2, v18, v10
-#     vmulh.vx v7, v7, t0
-#     vadd.vv  v3, v19, v11
-#     vse16.v  v0, (a0);  addi a0, a0, 16
-#     vsub.vv  v12, v12, v4
-#     vse16.v  v1, (a0);  addi a0, a0, 16
-#     vsub.vv  v13, v13, v5
-#     vse16.v  v2, (a0);  addi a0, a0, 16
-#     vsub.vv  v14, v14, v6
-#     vse16.v  v3, (a0);  addi a0, a0, 16
-#     vsub.vv  v15, v15, v7
-#     vadd.vv  v4, v20, v12
-#     vadd.vv  v5, v21, v13
-#     vadd.vv  v6, v22, v14
-#     vadd.vv  v7, v23, v15
-#     vse16.v  v4, (a0);  addi a0, a0, 16
-#     vsub.vv  v8, v16, v8
-#     vse16.v  v5, (a0);  addi a0, a0, 16
-#     vsub.vv  v9, v17, v9
-#     vse16.v  v6, (a0);  addi a0, a0, 16
-#     vsub.vv  v10, v18, v10
-#     vse16.v  v7, (a0);  addi a0, a0, (64*0+128)*2-16*7 // a[128]
-#     vsub.vv  v11, v19, v11
-#     vse16.v  v8,  (a0);  addi a0, a0, 16
-#     vsub.vv  v12, v20, v12
-#     vse16.v  v9,  (a0);  addi a0, a0, 16
-#     vsub.vv  v13, v21, v13
-#     vse16.v  v10, (a0);  addi a0, a0, 16
-#     vsub.vv  v14, v22, v14
-#     vse16.v  v11, (a0);  addi a0, a0, 16
-#     vsub.vv  v15, v23, v15
-#     vse16.v  v12, (a0);  addi a0, a0, 16
-#     vse16.v  v13, (a0);  addi a0, a0, 16
-#     vse16.v  v14, (a0);  addi a0, a0, 16
-#     vse16.v  v15, (a0);  addi a0, a0, 16 // a[192]
-#     vle16.v  v24, (a0);  addi a0, a0, 16
-#     vle16.v  v25, (a0);  addi a0, a0, 16
-#     vle16.v  v26, (a0);  addi a0, a0, 16
-#     vle16.v  v27, (a0);  addi a0, a0, 16
-#     vmul.vx v0, v24, t2
-#     vmul.vx v1, v25, t2
-#     vmul.vx v2, v26, t2
-#     vmul.vx v3, v27, t2
-#     vle16.v  v28, (a0);  addi a0, a0, 16
-#     vle16.v  v29, (a0);  addi a0, a0, 16
-#     vle16.v  v30, (a0);  addi a0, a0, 16
-#     vle16.v  v31, (a0);  addi a0, a0, -(128*2)-16*7 // a[64]
-#     vmul.vx v4, v28, t2
-#     vmul.vx v5, v29, t2
-#     vmul.vx v6, v30, t2
-#     vmul.vx v7, v31, t2
-#     vle16.v  v16, (a0);  addi a0, a0, 16
-#     vmulh.vx v24, v24, t1
-#     vle16.v  v17, (a0);  addi a0, a0, 16
-#     vmulh.vx v25, v25, t1
-#     vle16.v  v18, (a0);  addi a0, a0, 16
-#     vmulh.vx v26, v26, t1
-#     vle16.v  v19, (a0);  addi a0, a0, 16
-#     vmulh.vx v27, v27, t1
-#     vle16.v  v20, (a0);  addi a0, a0, 16
-#     vmulh.vx v28, v28, t1
-#     vle16.v  v21, (a0);  addi a0, a0, 16
-#     vmulh.vx v29, v29, t1
-#     vle16.v  v22, (a0);  addi a0, a0, 16
-#     vmulh.vx v30, v30, t1
-#     vle16.v  v23, (a0);  addi a0, a0, -16*7 // a[64]
-#     vmulh.vx v31, v31, t1
-#     vmulh.vx v0, v0, t0
-#     vmulh.vx v1, v1, t0
-#     vmulh.vx v2, v2, t0
-#     vmulh.vx v3, v3, t0
-#     vsub.vv  v24, v24, v0
-#     vsub.vv  v25, v25, v1
-#     vsub.vv  v26, v26, v2
-#     vsub.vv  v27, v27, v3
-#     vmulh.vx v4, v4, t0
-#     vadd.vv  v0, v16, v24
-#     vmulh.vx v5, v5, t0
-#     vadd.vv  v1, v17, v25
-#     vmulh.vx v6, v6, t0
-#     vadd.vv  v2, v18, v26
-#     vmulh.vx v7, v7, t0
-#     vadd.vv  v3, v19, v27
-#     vse16.v  v0, (a0);  addi a0, a0, 16
-#     vsub.vv  v28, v28, v4
-#     vse16.v  v1, (a0);  addi a0, a0, 16
-#     vsub.vv  v29, v29, v5
-#     vse16.v  v2, (a0);  addi a0, a0, 16
-#     vsub.vv  v30, v30, v6
-#     vse16.v  v3, (a0);  addi a0, a0, 16
-#     vsub.vv  v31, v31, v7
-#     vadd.vv  v4, v20, v28
-#     vadd.vv  v5, v21, v29
-#     vadd.vv  v6, v22, v30
-#     vadd.vv  v7, v23, v31
-#     vse16.v  v4, (a0);  addi a0, a0, 16
-#     vsub.vv  v24, v16, v24
-#     vse16.v  v5, (a0);  addi a0, a0, 16
-#     vsub.vv  v25, v17, v25
-#     vse16.v  v6, (a0);  addi a0, a0, 16
-#     vsub.vv  v26, v18, v26
-#     vse16.v  v7, (a0);  addi a0, a0, -16*7+128*2 // a[192]
-#     vsub.vv  v27, v19, v27
-#     vse16.v  v24, (a0);  addi a0, a0, 16
-#     vsub.vv  v28, v20, v28
-#     vse16.v  v25, (a0);  addi a0, a0, 16
-#     vsub.vv  v29, v21, v29
-#     vse16.v  v26, (a0);  addi a0, a0, 16
-#     vsub.vv  v30, v22, v30
-#     vse16.v  v27, (a0);  addi a0, a0, 16
-#     vsub.vv  v31, v23, v31
-#     vse16.v  v28, (a0);  addi a0, a0, 16
-#     vse16.v  v29, (a0);  addi a0, a0, 16
-#     vse16.v  v30, (a0);  addi a0, a0, 16
-#     vse16.v  v31, (a0);  addi a0, a0, -16*7-192*2 // a[0]
-# .endm
+.macro ct_bfu_vv_ref_x4 \
+        vo0_0, vo0_1, vo1_0, vo1_1, vo2_0, vo2_1, vo3_0, vo3_1, \
+        va0_0, va0_1, va1_0, va1_1, va2_0, va2_1, va3_0, va3_1, \
+        vzeta0, vzeta1, vzeta2, vzeta3, xq, xqinv
+    vmul.vv  \vo0_0, \va0_1, \vzeta0;       vmul.vv  \vo1_0, \va1_1, \vzeta1
+    vmul.vv  \vo2_0, \va2_1, \vzeta2;       vmul.vv  \vo3_0, \va3_1, \vzeta3
+    vmul.vx  \vo0_0, \vo0_0, \xqinv;        vmul.vx  \vo1_0, \vo1_0, \xqinv
+    vmul.vx  \vo2_0, \vo2_0, \xqinv;        vmul.vx  \vo3_0, \vo3_0, \xqinv
+    vmulh.vv \va0_1, \va0_1, \vzeta0;       vmulh.vv \va1_1, \va1_1, \vzeta1
+    vmulh.vv \va2_1, \va2_1, \vzeta2;       vmulh.vv \va3_1, \va3_1, \vzeta3
+    vmulh.vx \vo0_0, \vo0_0, \xq;           vmulh.vx \vo1_0, \vo1_0, \xq
+    vmulh.vx \vo2_0, \vo2_0, \xq;           vmulh.vx \vo3_0, \vo3_0, \xq
+    vsub.vv  \vo0_0, \va0_1, \vo0_0;        vsub.vv  \vo1_0, \va1_1, \vo1_0
+    vsub.vv  \vo2_0, \va2_1, \vo2_0;        vsub.vv  \vo3_0, \va3_1, \vo3_0
+    vsub.vv  \vo0_1, \va0_0, \vo0_0;        vsub.vv  \vo1_1, \va1_0, \vo1_0
+    vsub.vv  \vo2_1, \va2_0, \vo2_0;        vsub.vv  \vo3_1, \va3_0, \vo3_0
+    vadd.vv  \vo0_0, \va0_0, \vo0_0;        vadd.vv  \vo1_0, \va1_0, \vo1_0
+    vadd.vv  \vo2_0, \va2_0, \vo2_0;        vadd.vv  \vo3_0, \va3_0, \vo3_0
+.endm
 
-# The implementation with LMUL=4
+.macro ct_bfu_vv_x8 \
+        va0_0, va0_1, va1_0, va1_1, va2_0, va2_1, va3_0, va3_1, \
+        va4_0, va4_1, va5_0, va5_1, va6_0, va6_1, va7_0, va7_1, \
+        vzeta0, vzetaqinv0, vzeta1, vzetaqinv1, vzeta2, vzetaqinv2, vzeta3, vzetaqinv3, \
+        vzeta4, vzetaqinv4, vzeta5, vzetaqinv5, vzeta6, vzetaqinv6, vzeta7, vzetaqinv7, xq, \
+        vt0_0, vt1_0, vt2_0, vt3_0, vt4_0, vt5_0, vt6_0, vt7_0 
+    vmul.vv  \vt0_0, \va0_1, \vzetaqinv0;   vmul.vv  \vt1_0, \va1_1, \vzetaqinv1
+    vmul.vv  \vt2_0, \va2_1, \vzetaqinv2;   vmul.vv  \vt3_0, \va3_1, \vzetaqinv3
+    vmul.vv  \vt4_0, \va4_1, \vzetaqinv4;   vmul.vv  \vt5_0, \va5_1, \vzetaqinv5
+    vmul.vv  \vt6_0, \va6_1, \vzetaqinv6;   vmul.vv  \vt7_0, \va7_1, \vzetaqinv7
+    vmulh.vv \va0_1, \va0_1, \vzeta0;       vmulh.vv \va1_1, \va1_1, \vzeta1
+    vmulh.vv \va2_1, \va2_1, \vzeta2;       vmulh.vv \va3_1, \va3_1, \vzeta3
+    vmulh.vv \va4_1, \va4_1, \vzeta4;       vmulh.vv \va5_1, \va5_1, \vzeta5
+    vmulh.vv \va6_1, \va6_1, \vzeta6;       vmulh.vv \va7_1, \va7_1, \vzeta7
+    vmulh.vx \vt0_0, \vt0_0, \xq;           vmulh.vx \vt1_0, \vt1_0, \xq
+    vmulh.vx \vt2_0, \vt2_0, \xq;           vmulh.vx \vt3_0, \vt3_0, \xq
+    vmulh.vx \vt4_0, \vt4_0, \xq;           vmulh.vx \vt5_0, \vt5_0, \xq
+    vmulh.vx \vt6_0, \vt6_0, \xq;           vmulh.vx \vt7_0, \vt7_0, \xq
+    vsub.vv  \vt0_0, \va0_1, \vt0_0;        vsub.vv  \vt1_0, \va1_1, \vt1_0
+    vsub.vv  \vt2_0, \va2_1, \vt2_0;        vsub.vv  \vt3_0, \va3_1, \vt3_0
+    vsub.vv  \vt4_0, \va4_1, \vt4_0;        vsub.vv  \vt5_0, \va5_1, \vt5_0
+    vsub.vv  \vt6_0, \va6_1, \vt6_0;        vsub.vv  \vt7_0, \va7_1, \vt7_0
+    vsub.vv  \va0_1, \va0_0, \vt0_0;        vsub.vv  \va1_1, \va1_0, \vt1_0
+    vsub.vv  \va2_1, \va2_0, \vt2_0;        vsub.vv  \va3_1, \va3_0, \vt3_0
+    vsub.vv  \va4_1, \va4_0, \vt4_0;        vsub.vv  \va5_1, \va5_0, \vt5_0
+    vsub.vv  \va6_1, \va6_0, \vt6_0;        vsub.vv  \va7_1, \va7_0, \vt7_0
+    vadd.vv  \va0_0, \va0_0, \vt0_0;        vadd.vv  \va1_0, \va1_0, \vt1_0
+    vadd.vv  \va2_0, \va2_0, \vt2_0;        vadd.vv  \va3_0, \va3_0, \vt3_0
+    vadd.vv  \va4_0, \va4_0, \vt4_0;        vadd.vv  \va5_0, \va5_0, \vt5_0
+    vadd.vv  \va6_0, \va6_0, \vt6_0;        vadd.vv  \va7_0, \va7_0, \vt7_0
+.endm
+
+.macro gs_bfu_vx va0_0, va0_1, xzeta0, xzetaqinv0, xq, vt0_0, vt0_1
+    vsub.vv  \vt0_0, \va0_0, \va0_1
+    vadd.vv  \va0_0, \va0_0, \va0_1
+    vmul.vx  \va0_1, \vt0_0, \xzetaqinv0
+    vmulh.vx \vt0_1, \vt0_0, \xzeta0
+    vmulh.vx \va0_1, \va0_1, \xq
+    vsub.vv  \va0_1, \vt0_1, \va0_1
+.endm
+
+.macro gs_bfu_vx_x8 \
+        vo0_0, vo0_1, vo1_0, vo1_1, vo2_0, vo2_1, vo3_0, vo3_1, \
+        vo4_0, vo4_1, vo5_0, vo5_1, vo6_0, vo6_1, vo7_0, vo7_1, \
+        va0_0, va0_1, va1_0, va1_1, va2_0, va2_1, va3_0, va3_1, \
+        va4_0, va4_1, va5_0, va5_1, va6_0, va6_1, va7_0, va7_1, \
+        xzeta0, xzetaqinv0, xzeta1, xzetaqinv1, \
+        xzeta2, xzetaqinv2, xzeta3, xzetaqinv3, \
+        xzeta4, xzetaqinv4, xzeta5, xzetaqinv5, \
+        xzeta6, xzetaqinv6, xzeta7, xzetaqinv7, xq
+    vsub.vv  \vo0_1, \va0_0, \va0_1;        vsub.vv  \vo1_1, \va1_0, \va1_1
+    vsub.vv  \vo2_1, \va2_0, \va2_1;        vsub.vv  \vo3_1, \va3_0, \va3_1
+    vsub.vv  \vo4_1, \va4_0, \va4_1;        vsub.vv  \vo5_1, \va5_0, \va5_1
+    vsub.vv  \vo6_1, \va6_0, \va6_1;        vsub.vv  \vo7_1, \va7_0, \va7_1
+    vadd.vv  \vo0_0, \va0_0, \va0_1;        vadd.vv  \vo1_0, \va1_0, \va1_1
+    vadd.vv  \vo2_0, \va2_0, \va2_1;        vadd.vv  \vo3_0, \va3_0, \va3_1
+    vadd.vv  \vo4_0, \va4_0, \va4_1;        vadd.vv  \vo5_0, \va5_0, \va5_1
+    vadd.vv  \vo6_0, \va6_0, \va6_1;        vadd.vv  \vo7_0, \va7_0, \va7_1
+    vmul.vx  \va0_1, \vo0_1, \xzetaqinv0;   vmul.vx  \va1_1, \vo1_1, \xzetaqinv1
+    vmul.vx  \va2_1, \vo2_1, \xzetaqinv2;   vmul.vx  \va3_1, \vo3_1, \xzetaqinv3
+    vmul.vx  \va4_1, \vo4_1, \xzetaqinv4;   vmul.vx  \va5_1, \vo5_1, \xzetaqinv5
+    vmul.vx  \va6_1, \vo6_1, \xzetaqinv6;   vmul.vx  \va7_1, \vo7_1, \xzetaqinv7
+    vmulh.vx \vo0_1, \vo0_1, \xzeta0;       vmulh.vx \vo1_1, \vo1_1, \xzeta1
+    vmulh.vx \vo2_1, \vo2_1, \xzeta2;       vmulh.vx \vo3_1, \vo3_1, \xzeta3
+    vmulh.vx \vo4_1, \vo4_1, \xzeta4;       vmulh.vx \vo5_1, \vo5_1, \xzeta5
+    vmulh.vx \vo6_1, \vo6_1, \xzeta6;       vmulh.vx \vo7_1, \vo7_1, \xzeta7
+    vmulh.vx \va0_1, \va0_1, \xq;           vmulh.vx \va1_1, \va1_1, \xq
+    vmulh.vx \va2_1, \va2_1, \xq;           vmulh.vx \va3_1, \va3_1, \xq
+    vmulh.vx \va4_1, \va4_1, \xq;           vmulh.vx \va5_1, \va5_1, \xq
+    vmulh.vx \va6_1, \va6_1, \xq;           vmulh.vx \va7_1, \va7_1, \xq
+    vsub.vv  \vo0_1, \vo0_1, \va0_1;        vsub.vv  \vo1_1, \vo1_1, \va1_1
+    vsub.vv  \vo2_1, \vo2_1, \va2_1;        vsub.vv  \vo3_1, \vo3_1, \va3_1
+    vsub.vv  \vo4_1, \vo4_1, \va4_1;        vsub.vv  \vo5_1, \vo5_1, \va5_1
+    vsub.vv  \vo6_1, \vo6_1, \va6_1;        vsub.vv  \vo7_1, \vo7_1, \va7_1
+.endm
+
+.macro gs_bfu_vv_ref_x8 \
+        va0_0, va0_1, va1_0, va1_1, va2_0, va2_1, va3_0, va3_1, \
+        va4_0, va4_1, va5_0, va5_1, va6_0, va6_1, va7_0, va7_1, \
+        vzeta0, vzeta1, vzeta2, vzeta3, \
+        vzeta4, vzeta5, vzeta6, vzeta7, xq, xqinv, \
+        vt0_0, vt1_0, vt2_0, vt3_0, vt4_0, vt5_0, vt6_0, vt7_0
+    vsub.vv  \vt0_0, \va0_0, \va0_1;        vsub.vv  \vt1_0, \va1_0, \va1_1
+    vsub.vv  \vt2_0, \va2_0, \va2_1;        vsub.vv  \vt3_0, \va3_0, \va3_1
+    vsub.vv  \vt4_0, \va4_0, \va4_1;        vsub.vv  \vt5_0, \va5_0, \va5_1
+    vsub.vv  \vt6_0, \va6_0, \va6_1;        vsub.vv  \vt7_0, \va7_0, \va7_1
+    vadd.vv  \va0_0, \va0_0, \va0_1;        vadd.vv  \va1_0, \va1_0, \va1_1
+    vadd.vv  \va2_0, \va2_0, \va2_1;        vadd.vv  \va3_0, \va3_0, \va3_1
+    vadd.vv  \va4_0, \va4_0, \va4_1;        vadd.vv  \va5_0, \va5_0, \va5_1
+    vadd.vv  \va6_0, \va6_0, \va6_1;        vadd.vv  \va7_0, \va7_0, \va7_1
+    vmul.vv  \va0_1, \vt0_0, \vzeta0;       vmul.vv  \va1_1, \vt1_0, \vzeta1
+    vmul.vv  \va2_1, \vt2_0, \vzeta2;       vmul.vv  \va3_1, \vt3_0, \vzeta3
+    vmul.vv  \va4_1, \vt4_0, \vzeta4;       vmul.vv  \va5_1, \vt5_0, \vzeta5
+    vmul.vv  \va6_1, \vt6_0, \vzeta6;       vmul.vv  \va7_1, \vt7_0, \vzeta7
+    vmul.vx  \va0_1, \va0_1, \xqinv;        vmul.vx  \va1_1, \va1_1, \xqinv
+    vmul.vx  \va2_1, \va2_1, \xqinv;        vmul.vx  \va3_1, \va3_1, \xqinv
+    vmul.vx  \va4_1, \va4_1, \xqinv;        vmul.vx  \va5_1, \va5_1, \xqinv
+    vmul.vx  \va6_1, \va6_1, \xqinv;        vmul.vx  \va7_1, \va7_1, \xqinv
+    vmulh.vv \vt0_0, \vt0_0, \vzeta0;       vmulh.vv \vt1_0, \vt1_0, \vzeta1
+    vmulh.vv \vt2_0, \vt2_0, \vzeta2;       vmulh.vv \vt3_0, \vt3_0, \vzeta3
+    vmulh.vv \vt4_0, \vt4_0, \vzeta4;       vmulh.vv \vt5_0, \vt5_0, \vzeta5
+    vmulh.vv \vt6_0, \vt6_0, \vzeta6;       vmulh.vv \vt7_0, \vt7_0, \vzeta7
+    vmulh.vx \va0_1, \va0_1, \xq;           vmulh.vx \va1_1, \va1_1, \xq
+    vmulh.vx \va2_1, \va2_1, \xq;           vmulh.vx \va3_1, \va3_1, \xq
+    vmulh.vx \va4_1, \va4_1, \xq;           vmulh.vx \va5_1, \va5_1, \xq
+    vmulh.vx \va6_1, \va6_1, \xq;           vmulh.vx \va7_1, \va7_1, \xq
+    vsub.vv  \va0_1, \vt0_0, \va0_1;        vsub.vv  \va1_1, \vt1_0, \va1_1
+    vsub.vv  \va2_1, \vt2_0, \va2_1;        vsub.vv  \va3_1, \vt3_0, \va3_1
+    vsub.vv  \va4_1, \vt4_0, \va4_1;        vsub.vv  \va5_1, \vt5_0, \va5_1
+    vsub.vv  \va6_1, \vt6_0, \va6_1;        vsub.vv  \va7_1, \vt7_0, \va7_1
+.endm
+
+.macro gs_bfu_vv_x8 \
+        va0_0, va0_1, va1_0, va1_1, va2_0, va2_1, va3_0, va3_1, \
+        va4_0, va4_1, va5_0, va5_1, va6_0, va6_1, va7_0, va7_1, \
+        vzeta0, vzetaqinv0, vzeta1, vzetaqinv1, vzeta2, vzetaqinv2, vzeta3, vzetaqinv3, \
+        vzeta4, vzetaqinv4, vzeta5, vzetaqinv5, vzeta6, vzetaqinv6, vzeta7, vzetaqinv7, xq, \
+        vt0_0, vt1_0, vt2_0, vt3_0, vt4_0, vt5_0, vt6_0, vt7_0
+    vsub.vv  \vt0_0, \va0_0, \va0_1;        vsub.vv  \vt1_0, \va1_0, \va1_1
+    vsub.vv  \vt2_0, \va2_0, \va2_1;        vsub.vv  \vt3_0, \va3_0, \va3_1
+    vsub.vv  \vt4_0, \va4_0, \va4_1;        vsub.vv  \vt5_0, \va5_0, \va5_1
+    vsub.vv  \vt6_0, \va6_0, \va6_1;        vsub.vv  \vt7_0, \va7_0, \va7_1
+    vadd.vv  \va0_0, \va0_0, \va0_1;        vadd.vv  \va1_0, \va1_0, \va1_1
+    vadd.vv  \va2_0, \va2_0, \va2_1;        vadd.vv  \va3_0, \va3_0, \va3_1
+    vadd.vv  \va4_0, \va4_0, \va4_1;        vadd.vv  \va5_0, \va5_0, \va5_1
+    vadd.vv  \va6_0, \va6_0, \va6_1;        vadd.vv  \va7_0, \va7_0, \va7_1
+    vmul.vv  \va0_1, \vt0_0, \vzetaqinv0;   vmul.vv  \va1_1, \vt1_0, \vzetaqinv1
+    vmul.vv  \va2_1, \vt2_0, \vzetaqinv2;   vmul.vv  \va3_1, \vt3_0, \vzetaqinv3
+    vmul.vv  \va4_1, \vt4_0, \vzetaqinv4;   vmul.vv  \va5_1, \vt5_0, \vzetaqinv5
+    vmul.vv  \va6_1, \vt6_0, \vzetaqinv6;   vmul.vv  \va7_1, \vt7_0, \vzetaqinv7
+    vmulh.vv \vt0_0, \vt0_0, \vzeta0;       vmulh.vv \vt1_0, \vt1_0, \vzeta1
+    vmulh.vv \vt2_0, \vt2_0, \vzeta2;       vmulh.vv \vt3_0, \vt3_0, \vzeta3
+    vmulh.vv \vt4_0, \vt4_0, \vzeta4;       vmulh.vv \vt5_0, \vt5_0, \vzeta5
+    vmulh.vv \vt6_0, \vt6_0, \vzeta6;       vmulh.vv \vt7_0, \vt7_0, \vzeta7
+    vmulh.vx \va0_1, \va0_1, \xq;           vmulh.vx \va1_1, \va1_1, \xq
+    vmulh.vx \va2_1, \va2_1, \xq;           vmulh.vx \va3_1, \va3_1, \xq
+    vmulh.vx \va4_1, \va4_1, \xq;           vmulh.vx \va5_1, \va5_1, \xq
+    vmulh.vx \va6_1, \va6_1, \xq;           vmulh.vx \va7_1, \va7_1, \xq
+    vsub.vv  \va0_1, \vt0_0, \va0_1;        vsub.vv  \va1_1, \vt1_0, \va1_1
+    vsub.vv  \va2_1, \vt2_0, \va2_1;        vsub.vv  \va3_1, \vt3_0, \va3_1
+    vsub.vv  \va4_1, \vt4_0, \va4_1;        vsub.vv  \va5_1, \vt5_0, \va5_1
+    vsub.vv  \va6_1, \vt6_0, \va6_1;        vsub.vv  \va7_1, \vt7_0, \va7_1
+.endm
+
+.macro montmul_const vr0, va0, xzeta, xzetaqinv, xq, vt0
+    vmul.vx  \vr0, \va0, \xzetaqinv;    vmulh.vx \vt0, \va0, \xzeta
+    vmulh.vx \vr0, \vr0, \xq;           vsub.vv  \vr0, \vt0, \vr0
+.endm
+
+.macro montmul_x4 vr0, vr1, vr2, vr3, \
+        va0, va1, va2, va3, \
+        vb0, vb1, vb2, vb3, \
+        xq, xqinv, vt0, vt1, vt2, vt3
+    vmul.vv  \vr0, \va0, \vb0;      vmul.vv  \vr1, \va1, \vb1
+    vmul.vv  \vr2, \va2, \vb2;      vmul.vv  \vr3, \va3, \vb3
+    vmul.vx  \vr0, \vr0, \xqinv;    vmul.vx  \vr1, \vr1, \xqinv
+    vmul.vx  \vr2, \vr2, \xqinv;    vmul.vx  \vr3, \vr3, \xqinv
+    vmulh.vv \vt0, \va0, \vb0;      vmulh.vv \vt1, \va1, \vb1
+    vmulh.vv \vt2, \va2, \vb2;      vmulh.vv \vt3, \va3, \vb3
+    vmulh.vx \vr0, \vr0, \xq;       vmulh.vx \vr1, \vr1, \xq
+    vmulh.vx \vr2, \vr2, \xq;       vmulh.vx \vr3, \vr3, \xq
+    vsub.vv  \vr0, \vt0, \vr0;      vsub.vv  \vr1, \vt1, \vr1
+    vsub.vv  \vr2, \vt2, \vr2;      vsub.vv  \vr3, \vt3, \vr3
+.endm
+
 .macro ntt_rvv_level0
-    lh t2, (_ZETAS_EXP+0)*2(a1)
-    lh t1, (_ZETAS_EXP+1)*2(a1)
-    addi a2, a0, (128)*2        // &a[128]
-
-    vle16.v v8,  (a2);  addi a2, a2, 2*8*4
-    vle16.v v12, (a2);  addi a2, a2, -2*8*4
-    vmul.vx v0, v8, t2
-    vmul.vx v4, v12, t2
-    vle16.v v16, (a0);  addi a0, a0, 2*8*4
-    vmulh.vx v8,  v8, t1
-    vmulh.vx v12, v12, t1
-    vle16.v v20, (a0);  addi a0, a0, -2*8*4
-    vmulh.vx v0, v0, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v8,  v8,  v0
-    vsub.vv  v12, v12, v4
-    vsub.vv  v0, v16, v8
-    vsub.vv  v4, v20, v12
-    vse16.v  v0, (a2);  addi a2, a2, 2*8*4
-    vse16.v  v4, (a2);  addi a2, a2, 2*8*4     // &a[192]
-    vadd.vv  v8, v16, v8
-    vadd.vv  v12,v20, v12
-    vle16.v  v24, (a2);  addi a2, a2, 2*8*4
-    vse16.v  v8,  (a0);  addi a0, a0, 2*8*4
-    vmul.vx  v0, v24, t2
-    vle16.v  v28, (a2);  addi a2, a2, -2*8*4
-    vse16.v  v12, (a0);  addi a0, a0, 2*8*4     // &a[64]
-    vmul.vx  v4, v28, t2
-    vle16.v  v16, (a0);  addi a0, a0, 2*8*4
-    vmulh.vx v24, v24, t1
-    vmulh.vx v28, v28, t1
-    vle16.v  v20, (a0);  addi a0, a0, -2*8*4
-    vmulh.vx v0, v0, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v24, v24, v0
-    vsub.vv  v28, v28, v4
-    vadd.vv  v0, v16, v24
-    vadd.vv  v4, v20, v28
-    vse16.v  v0,  (a0);  addi a0, a0, 2*8*4
-    vse16.v  v4,  (a0);  addi a0, a0, -2*8*4*3  // &a[0]
-    vsub.vv  v24, v16, v24
-    vsub.vv  v28, v20, v28
-    vse16.v  v24, (a2);  addi a2, a2, 2*8*4
-    vse16.v  v28, (a2)
+    li a7, 8*8; addi a6, a1, _ZETAS_EXP*2
+    vsetvli a7, a7, e16, m8, tu, mu
+    lh t3, 0*2(a6);     lh t2, 1*2(a6)
+    # a[0-63] & a[128-191]
+    addi a5, a0, 128*2
+    vle16.v v16, (a0);  vle16.v v24, (a5)
+    ct_bfu_vx v16, v24, t2, t3, t0, v0, v8
+    vse16.v v16, (a0);  vse16.v v24, (a5)
+    addi a4, a0, 64*2;  addi a5, a5, 64*2
+    vle16.v v16, (a4);  vle16.v v24, (a5)
+    ct_bfu_vx v16, v24, t2, t3, t0, v0, v8
+    vse16.v v16, (a4);  vse16.v v24, (a5)
 .endm
 
-.macro ntt_rvv_level1to6 off
-    // level 1
-    lh t2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L1 + \off*_ZETAS_EXP_1TO6_P1_L1)*2(a1)
-    addi t3, a0, (64+\off*128)*2 # a[64] or a[192]
-    lh t1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L1 + \off*_ZETAS_EXP_1TO6_P1_L1 + 1)*2(a1)
-    vle16.v v9,  (t3);  addi t3, t3, 16
-    vle16.v v10, (t3);  addi t3, t3, 16
-    vle16.v v11, (t3);  addi t3, t3, 16
-    vle16.v v12, (t3);  addi t3, t3, 16
-    vmul.vx v17, v9, t2
-    vmul.vx v18, v10, t2
-    vmul.vx v19, v11, t2
-    vmul.vx v20, v12, t2
-    vle16.v v13, (t3);  addi t3, t3, 16
-    vle16.v v14, (t3);  addi t3, t3, 16
-    vle16.v v15, (t3);  addi t3, t3, 16
-    vle16.v v16, (t3);  addi t3, a0, (\off*128)*2 # a[0] or a[128]
-    vmul.vx v21, v13, t2
-    vmul.vx v22, v14, t2
-    vmul.vx v23, v15, t2
-    vmul.vx v24, v16, t2
-    vle16.v v1, (t3);  addi t3, t3, 16
-    vmulh.vx v9, v9, t1
-    vle16.v v2, (t3);  addi t3, t3, 16
-    vmulh.vx v10, v10, t1
-    vle16.v v3, (t3);  addi t3, t3, 16
-    vmulh.vx v11, v11, t1
-    vle16.v v4, (t3);  addi t3, t3, 16
-    vmulh.vx v12, v12, t1
-    vle16.v v5, (t3);  addi t3, t3, 16
-    vmulh.vx v13, v13, t1
-    vle16.v v6, (t3);  addi t3, t3, 16
-    vmulh.vx v14, v14, t1
-    vle16.v v7, (t3);  addi t3, t3, 16
-    vmulh.vx v15, v15, t1
-    vle16.v v8, (t3)
-    vmulh.vx v16, v16, t1
-    vmulh.vx v21, v21, t0
-    vmulh.vx v22, v22, t0
-    vmulh.vx v23, v23, t0
-    vmulh.vx v24, v24, t0
-    vsub.vv  v13, v13, v21
-    vsub.vv  v14, v14, v22
-    vsub.vv  v15, v15, v23
-    vsub.vv  v16, v16, v24
-    vmulh.vx v17, v17, t0
-    vsub.vv  v21, v5, v13
-    vmulh.vx v18, v18, t0
-    vsub.vv  v22, v6, v14
-    vmulh.vx v19, v19, t0
-    vsub.vv  v23, v7, v15
-    vmulh.vx v20, v20, t0
-    vsub.vv  v24, v8, v16
-    vsub.vv  v9,  v9,  v17
-    vsub.vv  v10, v10, v18
-    vsub.vv  v11, v11, v19
-    vsub.vv  v12, v12, v20
-    lh t2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L2 + \off*_ZETAS_EXP_1TO6_P1_L2)*2(a1)
-    vsub.vv  v17, v1, v9
-    vsub.vv  v18, v2, v10
-    lh t1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L2 + \off*_ZETAS_EXP_1TO6_P1_L2 + 1)*2(a1)
-    vsub.vv  v19, v3, v11
-    vsub.vv  v20, v4, v12
-    lh t6, ((1-\off)*_ZETAS_EXP_1TO6_P0_L2 + \off*_ZETAS_EXP_1TO6_P1_L2 + 2)*2(a1)
-    vadd.vv  v13, v5, v13
-    vadd.vv  v14, v6, v14
-    lh t5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L2 + \off*_ZETAS_EXP_1TO6_P1_L2 + 3)*2(a1)
-    vadd.vv  v15, v7, v15
-    vadd.vv  v16, v8, v16
-    vadd.vv  v9, v1, v9
-    vadd.vv  v10, v2, v10
-    vadd.vv  v11, v3, v11
-    vadd.vv  v12, v4, v12
-    // v9~v16 = a0~a63; v17~v24 = a64~a127
-    // level 2
-    vmul.vx v1, v13, t2
-    vmul.vx v2, v14, t2
-    vmul.vx v3, v15, t2
-    vmul.vx v4, v16, t2
-    vmul.vx v5, v21, t6
-    vmul.vx v6, v22, t6
-    vmul.vx v7, v23, t6
-    vmul.vx v8, v24, t6
-    vmulh.vx v13, v13, t1
-    vmulh.vx v14, v14, t1
-    vmulh.vx v15, v15, t1
-    vmulh.vx v16, v16, t1
-    vmulh.vx v21, v21, t5
-    vmulh.vx v22, v22, t5
-    vmulh.vx v23, v23, t5
-    vmulh.vx v24, v24, t5
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v13, v13, v1
-    vsub.vv  v14, v14, v2
-    vsub.vv  v15, v15, v3
-    vsub.vv  v16, v16, v4
-    vmulh.vx v5, v5, t0
-    vadd.vv  v1, v9,  v13
-    vmulh.vx v6, v6, t0
-    vadd.vv  v2, v10, v14
-    vmulh.vx v7, v7, t0
-    vadd.vv  v3, v11, v15
-    vmulh.vx v8, v8, t0
-    lh t2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 0)*2(a1)
-    vadd.vv  v4, v12, v16
-    vsub.vv  v21, v21, v5
-    lh t1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 1)*2(a1)
-    vsub.vv  v22, v22, v6
-    vsub.vv  v23, v23, v7
-    lh t6, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 2)*2(a1)
-    vsub.vv  v24, v24, v8
-    vadd.vv  v5, v17, v21
-    lh t5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 3)*2(a1)
-    vadd.vv  v6, v18, v22
-    vadd.vv  v7, v19, v23
-    lh a3, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 4)*2(a1)
-    vadd.vv  v8, v20, v24
-    vsub.vv  v9, v9,  v13
-    lh a2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 5)*2(a1)
-    vsub.vv  v10, v10,v14
-    vsub.vv  v11,v11, v15
-    lh a5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 6)*2(a1)
-    vsub.vv  v12,v12, v16
-    vsub.vv  v13,v17, v21
-    lh a4, ((1-\off)*_ZETAS_EXP_1TO6_P0_L3 + \off*_ZETAS_EXP_1TO6_P1_L3 + 7)*2(a1)
-    vsub.vv  v14,v18, v22
-    vsub.vv  v15,v19, v23
-    vsub.vv  v16,v20, v24
-    // v1~v4,v9~v12,v5~v8,v13~v16 = a0~a127
-    // level 3
-    vmul.vx v17, v3,  t2
-    vmul.vx v18, v4,  t2
-    vmul.vx v19, v11, t6
-    vmul.vx v20, v12, t6
-    vmul.vx v21, v7,  a3
-    vmul.vx v22, v8,  a3
-    vmul.vx v23, v15, a5
-    vmul.vx v24, v16, a5
-    vmulh.vx v3,  v3,  t1
-    vmulh.vx v4,  v4,  t1
-    vmulh.vx v11, v11, t5
-    vmulh.vx v12, v12, t5
-    vmulh.vx v7,  v7,  a2
-    vmulh.vx v8,  v8,  a2
-    vmulh.vx v15, v15, a4
-    vmulh.vx v16, v16, a4
-    vmulh.vx v17, v17, t0
-    vmulh.vx v18, v18, t0
-    vmulh.vx v19, v19, t0
-    vmulh.vx v20, v20, t0
-    vsub.vv  v3,  v3,  v17
-    vsub.vv  v4,  v4,  v18
-    vsub.vv  v11, v11, v19
-    vsub.vv  v12, v12, v20
-    vmulh.vx v21, v21, t0
-    vadd.vv  v17, v1,  v3
-    vmulh.vx v22, v22, t0
-    vadd.vv  v18, v2,  v4
-    vmulh.vx v23, v23, t0
-    vadd.vv  v19, v9,  v11
-    vmulh.vx v24, v24, t0
-    lh t2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 0)*2(a1)
-    vadd.vv  v20, v10, v12
-    vsub.vv  v7,  v7,  v21
-    lh t1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 1)*2(a1)
-    vsub.vv  v8,  v8,  v22
-    vsub.vv  v15, v15, v23
-    lh t6, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 2)*2(a1)
-    vsub.vv  v16, v16, v24
-    vadd.vv  v21, v5,  v7
-    lh t5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 3)*2(a1)
-    vadd.vv  v22, v6,  v8
-    vadd.vv  v23, v13, v15
-    lh a3, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 4)*2(a1)
-    vadd.vv  v24, v14, v16
-    vsub.vv  v1,  v1,  v3
-    lh a2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 5)*2(a1)
-    vsub.vv  v2,  v2,  v4
-    vsub.vv  v3,  v9,  v11
-    lh a5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 6)*2(a1)
-    vsub.vv  v4,  v10, v12
-    vsub.vv  v5,  v5,  v7
-    lh a4, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 7)*2(a1)
-    vsub.vv  v6,  v6,  v8
-    vsub.vv  v7,  v13, v15
-    vsub.vv  v8,  v14, v16
-    // v17,v18,v1,v2,v19,v20,v3,v4,v21,v22,v5,v6,v23,v24,v7,v8=a0~a127
-    // level 4
-    vmul.vx v9,  v18,  t2
-    vmulh.vx v18, v18, t1
-    lh t2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 8)*2(a1)
-    lh t1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 + 9)*2(a1)
-    vmul.vx v10, v2,   t6
-    vmulh.vx v2,  v2,  t5
-    lh t6, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +10)*2(a1)
-    lh t5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +11)*2(a1)
-    vmul.vx v11, v20,  a3
-    vmulh.vx v20, v20, a2
-    lh a3, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +12)*2(a1)
-    lh a2, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +13)*2(a1)
-    vmul.vx v12, v4,   a5
-    vmulh.vx v4,  v4,  a4
-    lh a5, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +14)*2(a1)
-    lh a4, ((1-\off)*_ZETAS_EXP_1TO6_P0_L4 + \off*_ZETAS_EXP_1TO6_P1_L4 +15)*2(a1)
-    vmul.vx v13, v22,  t2
-    vmulh.vx v22, v22, t1
-    vmul.vx v14, v6,   t6
-    vmulh.vx v6,  v6,  t5
-    vmul.vx v15, v24,  a3
-    vmulh.vx v24, v24, a2
-    vmul.vx v16, v8,   a5
-    vmulh.vx v8,  v8,  a4
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v10, v10, t0
-    vmulh.vx v11, v11, t0
-    vmulh.vx v12, v12, t0
-    vsub.vv  v18, v18, v9
-    vsub.vv  v2,  v2,  v10
-    vsub.vv  v20, v20, v11
-    vsub.vv  v4,  v4,  v12
-    vmulh.vx v13, v13, t0
-    vadd.vv  v9,  v17, v18
-    vmulh.vx v14, v14, t0
-    vadd.vv  v10, v1,  v2
-    vmulh.vx v15, v15, t0
-    vadd.vv  v11, v19, v20
-    vmulh.vx v16, v16, t0
-    vadd.vv  v12, v3, v4
-    addi t4, a1, _MASK_11110000*2
-    vle16.v v0, (t4)
-    vsub.vv  v22, v22, v13
-    vsub.vv  v6,  v6,  v14
-    vsub.vv  v24, v24, v15
-    vsub.vv  v8,  v8,  v16
-    vsub.vv  v17, v17, v18
-    vsub.vv  v18, v1,  v2
-    vsub.vv  v19, v19, v20
-    vsub.vv  v20, v3,  v4
-    vadd.vv  v13, v21,  v22
-    vadd.vv  v14, v5,  v6
-    vadd.vv  v15, v23, v24
-    shuffle4 v1, v2, v9,  v17, v31, v30
-    vadd.vv  v16, v7, v8
-    shuffle4 v3, v4, v10, v18, v31, v30
-    addi t4, a1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L5 + \off*_ZETAS_EXP_1TO6_P1_L5)*2
-    vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vsub.vv  v21, v21, v22
-    vsub.vv  v22, v5,  v6
-    vsub.vv  v23, v23, v24
-    vsub.vv  v24, v7,  v8
-    // v9,v17,v10,v18,v11,v19,v12,v20,v13,v21,v14,v22,v15,v23,v16,v24 = a0~a127
-    // level 5
-    vmul.vv  v9,  v2,  v27
-    vmulh.vv v2,  v2,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    shuffle4 v5, v6, v11, v19, v31, v30
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle4 v7, v8, v12, v20, v31, v30
-    vmul.vv  v17, v4,  v27
-    vmulh.vv v4,  v4,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    vmulh.vx v9,  v9,  t0
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmulh.vx v17, v17, t0
-    vmul.vv  v10, v6,  v27
-    vmulh.vv v6,  v6,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    vsub.vv  v2,  v2,  v9
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmulh.vx v10, v10, t0
-    vmul.vv  v18, v8,  v27
-    vmulh.vv v8,  v8,  v26
-    vmulh.vx v18, v18, t0
-    vsub.vv  v4,  v4,  v17
-    vsub.vv  v6,  v6,  v10
-    vsub.vv  v8,  v8,  v18
-    // butterfly unit a+b, a-b
-    vadd.vv  v9,  v1,  v2
-    vsub.vv  v11, v1,  v2
-    vadd.vv  v17, v3,  v4
-    vsub.vv  v19, v3,  v4
-    vadd.vv  v10, v5,  v6
-    vsub.vv  v12, v5,  v6
-    shuffle4 v1, v2, v13, v21, v31, v30
-    shuffle4 v3, v4, v14, v22, v31, v30
-    vadd.vv  v18, v7,  v8
-    vsub.vv  v20, v7,  v8
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    shuffle4 v5, v6, v15, v23, v31, v30
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle4 v7, v8, v16, v24, v31, v30
-    vmul.vv  v13, v2,  v27
-    vmulh.vv v2,  v2,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmulh.vx v13, v13, t0
-    vmul.vv  v21, v4,  v27
-    vmulh.vv v4,  v4,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmulh.vx v21, v21, t0
-    vmul.vv  v14, v6,  v27
-    vmulh.vv v6,  v6,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmulh.vx v14, v14, t0
-    vmul.vv  v22, v8,  v27
-    vmulh.vv v8,  v8,  v26
-    vsub.vv  v2,  v2, v13
-    vsub.vv  v4,  v4, v21
-    vmulh.vx v22, v22, t0
-    vsub.vv  v6,  v6, v14
-    vsub.vv  v8,  v8, v22
-    addi t4, a1, _MASK_11001100*2
-    vle16.v v0, (t4)
-    // butterfly unit a+b, a-b
-    vadd.vv  v13, v1,  v2
-    vsub.vv  v15, v1,  v2
-    vadd.vv  v21, v3,  v4
-    vsub.vv  v23, v3,  v4
-    vadd.vv  v14, v5,  v6
-    vsub.vv  v16, v5,  v6
-    shuffle2 v1, v2, v9, v11, v29, v28
-    vadd.vv  v22, v7,  v8
-    vsub.vv  v24, v7,  v8
-    // v9 =a0~a3,   a8~a11, v11=a4~a7,   a12~a15
-    // v17=a16~a19, a24~a27,v19=a20~a23, a28~a31
-    // v10,v12,v18,v20,v13,v15,v21,v23,v14,v16,v22,v24
-    // level 6
-    addi t4, a1, ((1-\off)*_ZETAS_EXP_1TO6_P0_L6+ \off*_ZETAS_EXP_1TO6_P1_L6)*2
-    vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v3, v4, v17,v19, v29, v28
-    vmul.vv  v9,  v2,  v27
-    vmulh.vv v2,  v2,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v5, v6, v10,v12, v29, v28
-    vmul.vv  v11, v4,  v27
-    vmulh.vv v4,  v4,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v7, v8, v18,v20, v29, v28
-    vmul.vv  v17, v6,  v27
-    vmulh.vv v6,  v6,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmul.vv  v19, v8,  v27
-    vmulh.vv v8,  v8,  v26
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v11, v11, t0
-    vmulh.vx v17, v17, t0
-    vmulh.vx v19, v19, t0
-    vsub.vv  v2,  v2,  v9
-    vsub.vv  v4,  v4,  v11
-    vsub.vv  v6,  v6,  v17
-    vsub.vv  v8,  v8,  v19
-    // butterfly unit a+b, a-b
-    vadd.vv  v9,  v1,  v2
-    vsub.vv  v11, v1,  v2
-    vadd.vv  v17, v3,  v4
-    vsub.vv  v19, v3,  v4
-    shuffle2 v1, v2, v13,v15, v29, v28
-    vadd.vv  v10, v5,  v6
-    vsub.vv  v12, v5,  v6
-    vadd.vv  v18, v7,  v8
-    vsub.vv  v20, v7,  v8
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v3, v4, v21,v23, v29, v28
-    vmul.vv  v13, v2,  v27
-    vmulh.vv v2,  v2,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v5, v6, v14,v16, v29, v28
-    vmul.vv  v15, v4,  v27
-    vmulh.vv v4,  v4,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    shuffle2 v7, v8, v22,v24, v29, v28
-    vmul.vv  v21, v6,  v27
-    vmulh.vv v6,  v6,  v26
-    addi t4, t4, 8*2;     vle16.v v27, (t4)
-    addi t4, t4, 8*2;     vle16.v v26, (t4)
-    vmul.vv  v23, v8,  v27
-    vmulh.vv v8,  v8,  v26
-    vmulh.vx v13, v13, t0
-    vmulh.vx v15, v15, t0
-    vmulh.vx v21, v21, t0
-    vmulh.vx v23, v23, t0
-    vsub.vv  v2,  v2,  v13
-    vsub.vv  v4,  v4,  v15
-    vsub.vv  v6,  v6,  v21
-    vsub.vv  v8,  v8,  v23
-    vadd.vv  v13, v1,  v2
-    vsub.vv  v15, v1,  v2
-    addi t4, a1, _MASK_10101010*2
-    vle16.v v0, (t4)
-    addi t4, a1, _MASK_10325476*2
-    vle16.v v27, (t4)
-    vadd.vv  v21, v3,  v4
-    vsub.vv  v23, v3,  v4
-    shuffle1 v1, v2, v9,  v11, v27
-    vadd.vv  v14, v5,  v6
-    vsub.vv  v16, v5,  v6
-    shuffle1 v3, v4, v17, v19, v27
-    vadd.vv  v22, v7,  v8
-    vsub.vv  v24, v7,  v8
-    // v9=[a0~a1,a4~a5,a8~a9,a12~a13], v11=[a2~a3,a6~a7,a10~a11,a14~a15]
-    // v9, v11,v17,v19,v10,v12,v18,v20
-    // v13,v15,v21,v23,v14,v16,v22,v24
-    addi t3, a0, (\off*128)*2 # a[0] or a[128]
-    vse16.v  v1, (t3);   addi t3, t3, 16
-    vse16.v  v2, (t3);   addi t3, t3, 16
-    shuffle1 v5, v6, v10, v12, v27
-    vse16.v  v3, (t3);   addi t3, t3, 16
-    vse16.v  v4, (t3);   addi t3, t3, 16
-    shuffle1 v7, v8, v18, v20, v27
-    vse16.v  v5, (t3);   addi t3, t3, 16
-    vse16.v  v6, (t3);   addi t3, t3, 16
-    vse16.v  v7, (t3);   addi t3, t3, 16
-    vse16.v  v8, (t3);   addi t3, a0, (64+\off*128)*2 # a[64] or a[192]
-    shuffle1 v9,  v11, v13, v15, v27
-    shuffle1 v17, v19, v21, v23, v27
-    vse16.v  v9, (t3);   addi t3, t3, 16
-    vse16.v  v11, (t3);  addi t3, t3, 16
-    shuffle1 v10, v12, v14, v16, v27
-    vse16.v  v17, (t3);  addi t3, t3, 16
-    vse16.v  v19, (t3);  addi t3, t3, 16
-    shuffle1 v18, v20, v22, v24, v27
-    vse16.v  v10, (t3);  addi t3, t3, 16
-    vse16.v  v12, (t3);  addi t3, t3, 16
-    vse16.v  v18, (t3);  addi t3, t3, 16
-    vse16.v  v20, (t3);  addi t3, t3, 16
+.macro ntt_rvv_level1to6 off, ZETAS_EXP_1TO6_L1, ZETAS_EXP_1TO6_L3
+    li a7, 8*8; addi a6, a1, \ZETAS_EXP_1TO6_L1*2
+    vsetvli a7, a7, e16, m8, tu, mu
+    addi a4, a0, (\off*128)*2;  addi a5, a0, (64+\off*128)*2
+    lh t3, 0*2(a6);     lh t2, 1*2(a6)
+    # a[0-63] & a[64-127] or a[128-191] & a[192-255]
+    vle16.v v16, (a4);  vle16.v v24, (a5)
+    # level 1
+    ct_bfu_vx v16, v24, t2, t3, t0, v0, v8
+    # level 2
+    li a7, 8*4
+    lh t3, 2*2(a6);     lh t2, 3*2(a6)
+    vsetvli a7, a7, e16, m4, tu, mu
+    lh t5, 4*2(a6);     lh t4, 5*2(a6)
+    ct_bfu_vx_x2 v16, v20, v24, v28, t2, t3, t4, t5, t0, v0, v4, v8, v12
+    vsetivli a7, 8, e16, m1, tu, mu
+    # shuffle4
+    addi t2, a1, _MASK_01230123*2; addi t3, a1, _MASK_45674567*2; li t6, 0x0f
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v24, v17, v25, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v18, v26, v19, v27, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v20, v28, v21, v29, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v22, v30, v23, v31, v8, v9, v10, v11, v1, v2
+    # shuffle2
+    addi t2, a1, _MASK_01014545*2; addi t3, a1, _MASK_23236767*2; li t6, 0x33
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v20, v24, v28, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v17, v21, v25, v29, v8, v9, v10, v11, v1, v2
+    addi a6, a1, \ZETAS_EXP_1TO6_L3*2
+    shuffle_x2 v18, v22, v26, v30, v8, v9, v10, v11, v1, v2
+    vl2re16.v v4, (a6); addi a6, a6, 8*2*2
+    shuffle_x2 v19, v23, v27, v31, v8, v9, v10, v11, v1, v2
+    # level 3
+    ct_bfu_vv_x8 \
+        v16, v18, v20, v22, v24, v26, v28, v30, \
+        v17, v19, v21, v23, v25, v27, v29, v31, \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  t0, \
+        v8,  v9, v10, v11, v12, v13, v14, v15
+    # shuffle1
+    addi t2, a1, _MASK_10325476*2; li t6, 0x55
+    vle16.v v1, (t2); vmv.s.x v0, t6
+    shuffle_x2 v16, v18, v24, v26, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v17, v19, v25, v27, v8, v9, v10, v11, v1, v1
+    vl2re16.v v4, (a6); addi a6, a6, 8*2*2
+    shuffle_x2 v20, v22, v28, v30, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v21, v23, v29, v31, v8, v9, v10, v11, v1, v1
+    # level 4
+    ct_bfu_vv_x8 \
+        v16, v17, v18, v19, v20, v21, v22, v23, \
+        v24, v25, v26, v27, v28, v29, v30, v31, \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  t0, \
+        v8,  v9, v10, v11, v12, v13, v14, v15
+    vl4re16.v v0, (a6); addi a6, a6, 8*4*2
+    # level 5
+    ct_bfu_vv_x8 \
+        v16, v24, v18, v26, v20, v28, v22, v30, \
+        v17, v25, v19, v27, v21, v29, v23, v31, \
+        v1,  v0,  v1,  v0,  v1,  v0,  v1,  v0,  \
+        v3,  v2,  v3,  v2,  v3,  v2,  v3,  v2,  t0, \
+        v8,  v9, v10, v11, v12, v13, v14, v15
+    # level 6
+    vl4re16.v v4, (a6)
+    addi a4, a0, (\off*128)*2;  addi a5, a0, (64+\off*128)*2
+    # polynomial coefficients will be redirected to v8-v15
+    ct_bfu_vv_ref_x4 \
+        v8,  v10, v9,  v11, v12, v14, v13, v15, \
+        v16, v20, v18, v22, v24, v28, v26, v30, \
+        v4,  v4,  v5,  v5,  t0, t1
+    vs8r.v v8, (a4)
+    ct_bfu_vv_ref_x4 \
+        v8,  v10, v9,  v11, v12, v14, v13, v15, \
+        v17, v21, v19, v23, v25, v29, v27, v31, \
+        v6,  v6,  v7,  v7, t0, t1
+    vs8r.v v8, (a5)
 .endm
 
-// register usage:
-// t0 = Q
-// t1/t2, t5/t6, a2/a3, a4/a5: zeta/zeta*qinv
-// t3: address related to the input polynomial
-// t4: address related to the pre-computed table
-// v0: mask used for vmerge.vvm instruction
-// v28~v31: masks used for shuffle4/2
 .globl ntt_rvv
 .align 2
 ntt_rvv:
-    li t2, 32
-    vsetvli t2, t2, e16, m4, tu, mu
-    li t0, 3329
+    li t0, 3329;    li t1, -3327
     ntt_rvv_level0
-    vsetivli t2, 8, e16, m1, tu, mu
-    // load some masks used by shuffle4/2/1
-    addi t4, a1, _MASK_45674567*2
-    vle16.v v31, (t4)
-    addi t4, a1, _MASK_01230123*2
-    vle16.v v30, (t4)
-    addi t4, a1, _MASK_00010045*2
-    vle16.v v29, (t4)
-    addi t4, a1, _MASK_23006700*2
-    vle16.v v28, (t4)
-    ntt_rvv_level1to6 0
-    ntt_rvv_level1to6 1
+    ntt_rvv_level1to6 0, _ZETAS_EXP_1TO6_P0_L1, _ZETAS_EXP_1TO6_P0_L3
+    ntt_rvv_level1to6 1, _ZETAS_EXP_1TO6_P1_L1, _ZETAS_EXP_1TO6_P1_L3
+ret
+
+.macro intt_rvv_level0to5 off, ZETA_EXP_INTT_0TO5_L0
+    li a7, 8*8;    addi a5, a0, (\off*128)*2
+    vsetvli a7, a7, e16, m8, tu, mu
+    addi a6, a0, (64+\off*128)*2
+    vle16.v v0, (a5);   vle16.v v8, (a6)
+    li t3, -10079;  li t2, 1441     // qinv*(mont^2/128) and mont^2/128
+    addi a5, a1, \ZETA_EXP_INTT_0TO5_L0*2
+    montmul_const v16, v0, t2, t3, t0, v24
+    montmul_const v24, v8, t2, t3, t0, v0
+    vsetivli a7, 8, e16, m1, tu, mu
+    # level 0
+    vl4re16.v v0, (a5); addi a5, a5, 8*4*2
+    gs_bfu_vv_ref_x8 \
+        v16, v18, v20, v22, v24, v26, v28, v30, \
+        v17, v19, v21, v23, v25, v27, v29, v31, \
+        v0,  v1,  v2,  v3,  v0,  v1,  v2,  v3, t0, t1, \
+        v8,  v9,  v10, v11, v12, v13, v14, v15
+    # level 1
+    vl4re16.v v0, (a5); addi a5, a5, 8*4*2
+    gs_bfu_vv_x8 \
+        v16, v20, v24, v28, v17, v21, v25, v29, \
+        v18, v22, v26, v30, v19, v23, v27, v31, \
+        v1,  v0,  v3,  v2,  v1,  v0,  v3,  v2, \
+        v1,  v0,  v3,  v2,  v1,  v0,  v3,  v2, t0, \
+        v8,  v9,  v10, v11, v12, v13, v14, v15
+    # level 2
+    vl2re16.v v0, (a5); addi a5, a5, 8*2*2
+    gs_bfu_vv_x8 \
+        v16, v24, v17, v25, v18, v26, v19, v27, \
+        v20, v28, v21, v29, v22, v30, v23, v31, \
+        v1,  v0,  v1,  v0,  v1,  v0,  v1,  v0,  \
+        v1,  v0,  v1,  v0,  v1,  v0,  v1,  v0,  t0, \
+        v8,  v9,  v10, v11, v12, v13, v14, v15
+    # shuffle1
+    addi t2, a1, _MASK_10325476*2
+    li t6, 0x55
+    vle16.v v1, (t2);   vmv.s.x v0, t6
+    shuffle_x2 v16, v17, v18, v19, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v20, v21, v22, v23, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v24, v25, v26, v27, v8, v9, v10, v11, v1, v1
+    barrettRdc v16, v8, a4, t0
+    shuffle_x2 v28, v29, v30, v31, v8, v9, v10, v11, v1, v1
+    # level 3
+    vl2re16.v v4, (a5); addi a5, a5, 8*2*2
+    gs_bfu_vv_x8 \
+        v16, v17, v18, v19, v20, v21, v22, v23, \
+        v24, v25, v26, v27, v28, v29, v30, v31, \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  t0, \
+        v8,  v9,  v10, v11, v12, v13, v14, v15
+    # shuffle2
+    addi t2, a1, _MASK_01014545*2; addi t3, a1, _MASK_23236767*2; li t6, 0x33
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v18, v20, v22, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v24, v26, v28, v30, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v17, v19, v21, v23, v8, v9, v10, v11, v1, v2
+    barrettRdc v16, v8, a4, t0
+    shuffle_x2 v25, v27, v29, v31, v8, v9, v10, v11, v1, v2
+    # level 4
+    vl2re16.v v4, (a5); addi a5, a5, 8*2*2
+    gs_bfu_vv_x8 \
+        v16, v18, v20, v22, v24, v26, v28, v30, \
+        v17, v19, v21, v23, v25, v27, v29, v31, \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  \
+        v5,  v4,  v5,  v4,  v5,  v4,  v5,  v4,  t0, \
+        v8,  v9,  v10, v11, v12, v13, v14, v15
+    # shuffle4
+    addi t2, a1, _MASK_01230123*2; addi t3, a1, _MASK_45674567*2; li t6, 0x0f
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v20, v24, v28, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v17, v21, v25, v29, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v18, v22, v26, v30, v8, v9, v10, v11, v1, v2
+    barrettRdc v16, v8, a4, t0
+    lh t3, 0*2(a5);     lh t2, 1*2(a5)
+    shuffle_x2 v19, v23, v27, v31, v8, v9, v10, v11, v1, v2
+    # level 5
+    # polynomial coefficients will be redirected to v0-v15
+    gs_bfu_vx_x8 \
+        v0,  v8,  v1,  v9,  v2,  v10, v3,  v11, \
+        v4,  v12, v5,  v13, v6,  v14, v7,  v15, \
+        v16, v20, v24, v28, v17, v21, v25, v29, \
+        v18, v22, v26, v30, v19, v23, v27, v31, \
+        t2,  t3,  t2,  t3,  t2,  t3,  t2,  t3, \
+        t2,  t3,  t2,  t3,  t2,  t3,  t2,  t3, t0
+    barrettRdcX2 v0, v1, v16, v17, a4, t0
+    addi a5, a0, (\off*128)*2;  addi a6, a0, (64+\off*128)*2
+    vs8r.v v0, (a5);            vs8r.v v8, (a6)
+.endm
+
+.macro intt_rvv_level6
+    li a7, 8*8;     addi a6, a1, _ZETA_EXP_INTT_L6*2
+    vsetvli a7, a7, e16, m8, tu, mu
+    lh t2, 0*2(a6);     lh t1, 1*2(a6)
+    addi a5, a0, 128*2
+    # a[0-63] & a[128-191]
+    vle16.v v16, (a0);  vle16.v v24, (a5)
+    gs_bfu_vx v16, v24, t1, t2, t0, v0, v8
+    vse16.v v16, (a0);  vse16.v v24, (a5)
+    addi a4, a0, 64*2;  addi a5, a5, 64*2
+    vle16.v v16, (a4);  vle16.v v24, (a5)
+    gs_bfu_vx v16, v24, t1, t2, t0, v0, v8
+    vse16.v v16, (a4);  vse16.v v24, (a5)
+.endm
+
+.globl intt_rvv
+.align 2
+intt_rvv:
+    li t0, 3329;    li t1, -3327;   li a4, 20159
+    csrwi vxrm, 0   # round-to-nearest-up (add +0.5 LSB)
+    intt_rvv_level0to5 0, _ZETA_EXP_INTT_0TO5_P0_L0
+    intt_rvv_level0to5 1, _ZETA_EXP_INTT_0TO5_P1_L0
+    intt_rvv_level6
 ret
 
 // void poly_basemul_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table);
 // (a0b0 + b1 * (a1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + b3 * (a3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
 .globl poly_basemul_rvv
 .align 2
 poly_basemul_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    addi t3, a3, _ZETAS_QINV_BASEMUL*2  // for loading zetaqinv
-    addi t4, a3, _ZETAS_BASEMUL*2       // for loading zeta
-    li   t5, 8
+    li a7, 32;  li t3, _ZETAS_BASEMUL*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
 poly_basemul_rvv_loop:
-    vle16.v v0, (a1);  addi a1, a1, 16 // a0
-    vle16.v v1, (a1);  addi a1, a1, 16 // a1
-    vle16.v v2, (a1);  addi a1, a1, 16 // a2
-    vle16.v v3, (a1);  addi a1, a1, 16 // a3
-    vle16.v v30, (t3); addi t3, t3, 16  // zetaqinv
-    vle16.v v31, (t3); addi t3, t3, 16
-    vle16.v v28, (t4); addi t4, t4, 16  // zeta
-    vle16.v v29, (t4); addi t4, t4, 16
-    vmul.vv  v4, v1, v30
-    vmul.vv  v5, v3, v31
-    vle16.v v8,  (a2);  addi a2, a2, 16 // b0
-    vle16.v v9,  (a2);  addi a2, a2, 16 // b1
-    vmulh.vv v6, v1, v28
-    vmulh.vv v7, v3, v29
-    vmulh.vx v4, v4, t0
-    vmulh.vx v5, v5, t0
-    vle16.v v10, (a2);  addi a2, a2, 16 // b2
-    vle16.v v11, (a2);  addi a2, a2, 16 // b3
-    vsub.vv  v4, v6, v4 // a1zeta mod q
-    vsub.vv  v5, v7, v5 // a3zeta mod q
-    vmul.vv  v12, v0, v8     // a0b0.lo
-    vmul.vv  v13, v0, v9     // a0b1.lo
-    vmul.vv  v14, v4, v9     // b1(a1zeta).lo
-    vmul.vv  v15, v1, v8     // a1b0.lo
-    vmulh.vv v16, v0, v8     // a0b0.hi
-    vmulh.vv v17, v0, v9     // a0b1.hi
-    vmulh.vv v18, v4, v9     // b1(a1zeta).hi
-    vmulh.vv v19, v1, v8     // a1b0.hi
-    vmul.vx  v12, v12, t1   // *qinv
-    vmul.vx  v13, v13, t1   // *qinv
-    vmul.vx  v14, v14, t1   // *qinv
-    vmul.vx  v15, v15, t1   // *qinv
-    vmulh.vx v12, v12, t0   // *q
-    vmulh.vx v13, v13, t0   // *q
-    vmulh.vx v14, v14, t0   // *q
-    vmulh.vx v15, v15, t0   // *q
-    vsub.vv  v12, v16, v12  // a0b0
-    vsub.vv  v13, v17, v13  // a0b1
-    vsub.vv  v14, v18, v14  // b1(a1zeta)
-    vsub.vv  v15, v19, v15  // a1b0
-    vadd.vv  v12, v12, v14
-    vadd.vv  v13, v13, v15
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10   // a2b2.lo
-    vmul.vv  v17, v2, v11   // a2b3.lo
-    vmul.vv  v18, v5, v11   // b3(a3zeta).lo
-    vmul.vv  v19, v3, v10   // a3b2.lo
-    vmulh.vv v20, v2, v10   // a2b2.hi
-    vmulh.vv v21, v2, v11   // a2b3.hi
-    vmulh.vv v22, v5, v11   // b3(a3zeta).hi
-    vmulh.vv v23, v3, v10   // a3b2.hi
-    vmul.vx  v16, v16, t1   // *qinv
-    vmul.vx  v17, v17, t1   // *qinv
-    vmul.vx  v18, v18, t1   // *qinv
-    vmul.vx  v19, v19, t1   // *qinv
-    vmulh.vx v16, v16, t0   // *q
-    vmulh.vx v17, v17, t0   // *q
-    vmulh.vx v18, v18, t0   // *q
-    vmulh.vx v19, v19, t0   // *q
-    vsub.vv  v16, v20, v16  // a2b2
-    vsub.vv  v17, v21, v17  // a2b3
-    vsub.vv  v18, v22, v18  // b3(a3zeta)
-    vsub.vv  v19, v23, v19  // a3b2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_rvv_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    # a0b1 + a1b0
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    add a4, a0, a7;   add a5, a0, t3;   vse16.v v16, (a4); vse16.v v17, (a5)
+    add a4, a4, t5;   add a5, a5, t5;   vse16.v v18, (a4); vse16.v v19, (a5)
+    # load zetas
+    addi a4, a3, 0;   add  a5, a3, a7;  vle16.v v16, (a4); vle16.v v17, (a5)
+    add  a4, a4, a6;  add  a5, a5, a6;  vle16.v v18, (a4); vle16.v v19, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v24, v25, v26, v27, v4, v5, v6, v7, \
+        v16, v17, v18, v19, t0, t1, v28, v29, v30, v31
+    montmul_x4 v0, v1, v2, v3, v12, v13, v14, v15, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    # a0b0 + b1 * (a1zeta mod q)
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    addi a4, a0, 0;    add a5, a0, a6;  vse16.v v20, (a4); vse16.v v21, (a5)
+    add  a4, a4, t5;   add a5, a5, t5;  vse16.v v22, (a4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5
+    bltu a1, t2, poly_basemul_rvv_loop
 ret
 
-// void poly_basemul_acc_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table);
-// (a0b0 + b1 * (a1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + b3 * (a3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
+// void poly_basemul_acc_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table)
 .globl poly_basemul_acc_rvv
 .align 2
 poly_basemul_acc_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    addi t3, a3, _ZETAS_QINV_BASEMUL*2  // for loading zetaqinv
-    addi t4, a3, _ZETAS_BASEMUL*2       // for loading zeta
-    li   t5, 8
+    li a7, 32;  li t3, _ZETAS_BASEMUL*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
 poly_basemul_acc_rvv_loop:
-    vle16.v v0, (a1);  addi a1, a1, 16 // a0
-    vle16.v v1, (a1);  addi a1, a1, 16 // a1
-    vle16.v v2, (a1);  addi a1, a1, 16 // a2
-    vle16.v v3, (a1);  addi a1, a1, 16 // a3
-    vle16.v v30, (t3); addi t3, t3, 16  // zetaqinv
-    vle16.v v31, (t3); addi t3, t3, 16
-    vle16.v v28, (t4); addi t4, t4, 16  // zeta
-    vle16.v v29, (t4); addi t4, t4, 16
-    vmul.vv  v4, v1, v30
-    vmul.vv  v5, v3, v31
-    vle16.v v8,  (a2);  addi a2, a2, 16 // b0
-    vle16.v v9,  (a2);  addi a2, a2, 16 // b1
-    vmulh.vv v6, v1, v28
-    vmulh.vv v7, v3, v29
-    vmulh.vx v4, v4, t0
-    vmulh.vx v5, v5, t0
-    vle16.v v10, (a2);  addi a2, a2, 16 // b2
-    vle16.v v11, (a2);  addi a2, a2, 16 // b3
-    vsub.vv  v4, v6, v4 // a1zeta mod q
-    vsub.vv  v5, v7, v5 // a3zeta mod q
-    vmul.vv  v12, v0, v8     // a0b0.lo
-    vmul.vv  v13, v0, v9     // a0b1.lo
-    vmul.vv  v14, v4, v9     // b1(a1zeta).lo
-    vmul.vv  v15, v1, v8     // a1b0.lo
-    vmulh.vv v16, v0, v8     // a0b0.hi
-    vmulh.vv v17, v0, v9     // a0b1.hi
-    vmulh.vv v18, v4, v9     // b1(a1zeta).hi
-    vmulh.vv v19, v1, v8     // a1b0.hi
-    vmul.vx  v12, v12, t1   // *qinv
-    vmul.vx  v13, v13, t1   // *qinv
-    vmul.vx  v14, v14, t1   // *qinv
-    vmul.vx  v15, v15, t1   // *qinv
-    vmulh.vx v12, v12, t0   // *q
-    vmulh.vx v13, v13, t0   // *q
-    vmulh.vx v14, v14, t0   // *q
-    vmulh.vx v15, v15, t0   // *q
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vsub.vv  v12, v16, v12  // a0b0
-    vsub.vv  v13, v17, v13  // a0b1
-    vsub.vv  v14, v18, v14  // b1(a1zeta)
-    vsub.vv  v15, v19, v15  // a1b0
-    vadd.vv  v12, v12, v14
-    vadd.vv  v13, v13, v15
-    vadd.vv  v12, v12, v24
-    vadd.vv  v13, v13, v25
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10   // a2b2.lo
-    vmul.vv  v17, v2, v11   // a2b3.lo
-    vmul.vv  v18, v5, v11   // b3(a3zeta).lo
-    vmul.vv  v19, v3, v10   // a3b2.lo
-    vmulh.vv v20, v2, v10   // a2b2.hi
-    vmulh.vv v21, v2, v11   // a2b3.hi
-    vmulh.vv v22, v5, v11   // b3(a3zeta).hi
-    vmulh.vv v23, v3, v10   // a3b2.hi
-    vmul.vx  v16, v16, t1   // *qinv
-    vmul.vx  v17, v17, t1   // *qinv
-    vmul.vx  v18, v18, t1   // *qinv
-    vmul.vx  v19, v19, t1   // *qinv
-    vmulh.vx v16, v16, t0   // *q
-    vmulh.vx v17, v17, t0   // *q
-    vmulh.vx v18, v18, t0   // *q
-    vmulh.vx v19, v19, t0   // *q
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vsub.vv  v16, v20, v16  // a2b2
-    vsub.vv  v17, v21, v17  // a2b3
-    vsub.vv  v18, v22, v18  // b3(a3zeta)
-    vsub.vv  v19, v23, v19  // a3b2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vadd.vv  v16, v16, v24
-    vadd.vv  v17, v17, v25
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_acc_rvv_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    add a4, a0, a7;   add a5, a0, t3;   vle16.v v24, (a4); vle16.v v25, (a5)
+    add a4, a4, t5;   add a5, a5, t5;   vle16.v v26, (a4); vle16.v v27, (a5)
+    # a0b1 + a1b0; then accumulate
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    vadd.vv v16, v16, v24;  vadd.vv v17, v17, v25
+    vadd.vv v18, v18, v26;  vadd.vv v19, v19, v27
+    add a4, a0, a7;   add a5, a0, t3;   vse16.v v16, (a4); vse16.v v17, (a5)
+    add a4, a4, t5;   add a5, a5, t5;   vse16.v v18, (a4); vse16.v v19, (a5)
+    # load zetas
+    addi a4, a3, 0;   add  a5, a3, a7;  vle16.v v16, (a4); vle16.v v17, (a5)
+    add  a4, a4, a6;  add  a5, a5, a6;  vle16.v v18, (a4); vle16.v v19, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v24, v25, v26, v27, v4, v5, v6, v7, \
+        v16, v17, v18, v19, t0, t1, v28, v29, v30, v31
+    montmul_x4 v0, v1, v2, v3, v12, v13, v14, v15, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    addi a4, a0, 0*2;  add a5, a0, a6;  vle16.v v28, (a4); vle16.v v29, (a5)
+    add  a4, a4, t5;   add a5, a5, t5;  vle16.v v30, (a4); vle16.v v31, (a5)
+    # a0b0 + b1 * (a1zeta mod q); then accumulate
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    vadd.vv v20, v20, v28; vadd.vv v21, v21, v29
+    vadd.vv v22, v22, v30; vadd.vv v23, v23, v31
+    addi a4, a0, 0;    add a5, a0, a6;  vse16.v v20, (a4); vse16.v v21, (a5)
+    add  a4, a4, t5;   add a5, a5, t5;  vse16.v v22, (a4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5
+    bltu a1, t2, poly_basemul_acc_rvv_loop
 ret
 
-// void poly_basemul_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache);
-// basemul and store b1zeta, b3zeta, ... into b_cache
-// (a0b0 + a1 * (b1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + a3 * (b3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
+// void poly_basemul_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
 .globl poly_basemul_cache_init_rvv
 .align 2
 poly_basemul_cache_init_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    addi t3, a3, _ZETAS_QINV_BASEMUL*2  // for loading zetaqinv
-    addi t4, a3, _ZETAS_BASEMUL*2       // for loading zeta
-    li   t5, 8
+    li a7, 32;  li t3, _ZETAS_BASEMUL*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
 poly_basemul_cache_init_rvv_loop:
-    vle16.v v0, (a2);  addi a2, a2, 16      // b0
-    vle16.v v1, (a2);  addi a2, a2, 16      // b1
-    vle16.v v2, (a2);  addi a2, a2, 16      // b2
-    vle16.v v3, (a2);  addi a2, a2, 16      // b3
-    vle16.v v30, (t3); addi t3, t3, 16      // zetaqinv
-    vle16.v v31, (t3); addi t3, t3, 16
-    vle16.v v28, (t4); addi t4, t4, 16      // zeta
-    vle16.v v29, (t4); addi t4, t4, 16
-    vmul.vv  v4, v1, v30
-    vmul.vv  v5, v3, v31
-    vle16.v v8,  (a1);  addi a1, a1, 16 // a0
-    vle16.v v9,  (a1);  addi a1, a1, 16 // a1
-    vmulh.vv v6, v1, v28
-    vmulh.vv v7, v3, v29
-    vmulh.vx v4, v4, t0
-    vmulh.vx v5, v5, t0
-    vle16.v v10, (a1);  addi a1, a1, 16 // a2
-    vle16.v v11, (a1);  addi a1, a1, 16 // a3
-    vsub.vv  v4, v6, v4     // b1zeta mod q
-    vsub.vv  v5, v7, v5     // b3zeta mod q
-    vse16.v  v4, (a4);  addi a4, a4, 16
-    vse16.v  v5, (a4);  addi a4, a4, 16
-    vmul.vv  v12, v0, v8     // b0a0.lo
-    vmul.vv  v13, v0, v9     // b0a1.lo
-    vmul.vv  v14, v4, v9     // a1(b1zeta).lo
-    vmul.vv  v15, v1, v8     // b1a0.lo
-    vmulh.vv v16, v0, v8     // b0a0.hi
-    vmulh.vv v17, v0, v9     // b0a1.hi
-    vmulh.vv v18, v4, v9     // a1(b1zeta).hi
-    vmulh.vv v19, v1, v8     // b1a0.hi
-    vmul.vx  v12, v12, t1   // *qinv
-    vmul.vx  v13, v13, t1   // *qinv
-    vmul.vx  v14, v14, t1   // *qinv
-    vmul.vx  v15, v15, t1   // *qinv
-    vmulh.vx v12, v12, t0   // *q
-    vmulh.vx v13, v13, t0   // *q
-    vmulh.vx v14, v14, t0   // *q
-    vmulh.vx v15, v15, t0   // *q
-    vsub.vv  v12, v16, v12  // b0a0
-    vsub.vv  v13, v17, v13  // b0a1
-    vsub.vv  v14, v18, v14  // a1(b1zeta)
-    vsub.vv  v15, v19, v15  // b1a0
-    vadd.vv  v12, v12, v14  // b0a0+a1(b1zeta)
-    vadd.vv  v13, v13, v15  // b0a1+b1a0
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10   // b2a2.lo
-    vmul.vv  v17, v2, v11   // b2a3.lo
-    vmul.vv  v18, v5, v11   // a3(b3zeta).lo
-    vmul.vv  v19, v3, v10   // b3a2.lo
-    vmulh.vv v20, v2, v10   // b2a2.hi
-    vmulh.vv v21, v2, v11   // b2a3.hi
-    vmulh.vv v22, v5, v11   // a3(b3zeta).hi
-    vmulh.vv v23, v3, v10   // b3a2.hi
-    vmul.vx  v16, v16, t1   // *qinv
-    vmul.vx  v17, v17, t1   // *qinv
-    vmul.vx  v18, v18, t1   // *qinv
-    vmul.vx  v19, v19, t1   // *qinv
-    vmulh.vx v16, v16, t0   // *q
-    vmulh.vx v17, v17, t0   // *q
-    vmulh.vx v18, v18, t0   // *q
-    vmulh.vx v19, v19, t0   // *q
-    vsub.vv  v16, v20, v16  // b2a2
-    vsub.vv  v17, v21, v17  // b2a3
-    vsub.vv  v18, v22, v18  // a3(b3zeta)
-    vsub.vv  v19, v23, v19  // b3a2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_cache_init_rvv_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    # a0b1 + a1b0
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    add t4, a0, a7;   add a5, a0, t3;   vse16.v v16, (t4); vse16.v v17, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vse16.v v18, (t4); vse16.v v19, (a5)
+    # load zetas
+    addi t4, a3, 0;   add  a5, a3, a7;  vle16.v v16, (t4); vle16.v v17, (a5)
+    add  t4, t4, a6;  add  a5, a5, a6;  vle16.v v18, (t4); vle16.v v19, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v24, v25, v26, v27, v12, v13, v14, v15, \
+        v16, v17, v18, v19, t0, t1, v28, v29, v30, v31
+    # store b1zeta
+    addi t4, a4, 0*0;  add  a5, a4, a7; vse16.v v24, (t4); vse16.v v25, (a5)
+    add  t4, t4, a6;   add  a5, a5, a6; vse16.v v26, (t4); vse16.v v27, (a5)
+    montmul_x4 v0, v1, v2, v3, v4, v5, v6, v7, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    # a0b0 + a1 * (b1zeta mod q)
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
+    add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
+    bltu a1, t2, poly_basemul_cache_init_rvv_loop
 ret
 
-// void poly_basemul_acc_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache);
-// basemul_acc and store b1zeta, b3zeta, ... into b_cache
-// (a0b0 + a1 * (b1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + a3 * (b3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
+// void poly_basemul_acc_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
 .globl poly_basemul_acc_cache_init_rvv
 .align 2
 poly_basemul_acc_cache_init_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    addi t3, a3, _ZETAS_QINV_BASEMUL*2  // for loading zetaqinv
-    addi t4, a3, _ZETAS_BASEMUL*2       // for loading zeta
-    li   t5, 8
+    li a7, 32;  li t3, _ZETAS_BASEMUL*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
 poly_basemul_acc_cache_init_rvv_loop:
-    vle16.v v0, (a2);  addi a2, a2, 16      // b0
-    vle16.v v1, (a2);  addi a2, a2, 16      // b1
-    vle16.v v2, (a2);  addi a2, a2, 16      // b2
-    vle16.v v3, (a2);  addi a2, a2, 16      // b3
-    vle16.v v30, (t3); addi t3, t3, 16      // zetaqinv
-    vle16.v v31, (t3); addi t3, t3, 16
-    vle16.v v28, (t4); addi t4, t4, 16      // zeta
-    vle16.v v29, (t4); addi t4, t4, 16
-    vmul.vv  v4, v1, v30
-    vmul.vv  v5, v3, v31
-    vle16.v v8,  (a1);  addi a1, a1, 16 // a0
-    vle16.v v9,  (a1);  addi a1, a1, 16 // a1
-    vmulh.vv v6, v1, v28
-    vmulh.vv v7, v3, v29
-    vmulh.vx v4, v4, t0
-    vmulh.vx v5, v5, t0
-    vle16.v v10, (a1);  addi a1, a1, 16 // a2
-    vle16.v v11, (a1);  addi a1, a1, 16 // a3
-    vsub.vv  v4, v6, v4     // b1zeta mod q
-    vsub.vv  v5, v7, v5     // b3zeta mod q
-    vse16.v  v4, (a4);  addi a4, a4, 16
-    vse16.v  v5, (a4);  addi a4, a4, 16
-    vmul.vv  v12, v0, v8     // b0a0.lo
-    vmul.vv  v13, v0, v9     // b0a1.lo
-    vmul.vv  v14, v4, v9     // a1(b1zeta).lo
-    vmul.vv  v15, v1, v8     // b1a0.lo
-    vmulh.vv v16, v0, v8     // b0a0.hi
-    vmulh.vv v17, v0, v9     // b0a1.hi
-    vmulh.vv v18, v4, v9     // a1(b1zeta).hi
-    vmulh.vv v19, v1, v8     // b1a0.hi
-    vmul.vx  v12, v12, t1   // *qinv
-    vmul.vx  v13, v13, t1   // *qinv
-    vmul.vx  v14, v14, t1   // *qinv
-    vmul.vx  v15, v15, t1   // *qinv
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vmulh.vx v12, v12, t0   // *q
-    vmulh.vx v13, v13, t0   // *q
-    vmulh.vx v14, v14, t0   // *q
-    vmulh.vx v15, v15, t0   // *q
-    vsub.vv  v12, v16, v12  // b0a0
-    vsub.vv  v13, v17, v13  // b0a1
-    vsub.vv  v14, v18, v14  // a1(b1zeta)
-    vsub.vv  v15, v19, v15  // b1a0
-    vadd.vv  v12, v12, v14  // b0a0+a1(b1zeta)
-    vadd.vv  v13, v13, v15  // b0a1+b1a0
-    vadd.vv  v12, v12, v24
-    vadd.vv  v13, v13, v25
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10   // b2a2.lo
-    vmul.vv  v17, v2, v11   // b2a3.lo
-    vmul.vv  v18, v5, v11   // a3(b3zeta).lo
-    vmul.vv  v19, v3, v10   // b3a2.lo
-    vmulh.vv v20, v2, v10   // b2a2.hi
-    vmulh.vv v21, v2, v11   // b2a3.hi
-    vmulh.vv v22, v5, v11   // a3(b3zeta).hi
-    vmulh.vv v23, v3, v10   // b3a2.hi
-    vmul.vx  v16, v16, t1   // *qinv
-    vmul.vx  v17, v17, t1   // *qinv
-    vmul.vx  v18, v18, t1   // *qinv
-    vmul.vx  v19, v19, t1   // *qinv
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vmulh.vx v16, v16, t0   // *q
-    vmulh.vx v17, v17, t0   // *q
-    vmulh.vx v18, v18, t0   // *q
-    vmulh.vx v19, v19, t0   // *q
-    vsub.vv  v16, v20, v16  // b2a2
-    vsub.vv  v17, v21, v17  // b2a3
-    vsub.vv  v18, v22, v18  // a3(b3zeta)
-    vsub.vv  v19, v23, v19  // b3a2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vadd.vv  v16, v16, v24
-    vadd.vv  v17, v17, v25
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_acc_cache_init_rvv_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    add t4, a0, a7;   add a5, a0, t3;   vle16.v v24, (t4); vle16.v v25, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vle16.v v26, (t4); vle16.v v27, (a5)
+    # a0b1 + a1b0; then accumulate
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    vadd.vv v16, v16, v24;  vadd.vv v17, v17, v25
+    vadd.vv v18, v18, v26;  vadd.vv v19, v19, v27
+    add t4, a0, a7;   add a5, a0, t3;   vse16.v v16, (t4); vse16.v v17, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vse16.v v18, (t4); vse16.v v19, (a5)
+    # load zetas
+    addi t4, a3, 0;   add  a5, a3, a7;  vle16.v v16, (t4); vle16.v v17, (a5)
+    add  t4, t4, a6;  add  a5, a5, a6;  vle16.v v18, (t4); vle16.v v19, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v24, v25, v26, v27, v12, v13, v14, v15, \
+        v16, v17, v18, v19, t0, t1, v28, v29, v30, v31
+    # store b1zeta
+    addi t4, a4, 0*0;  add  a5, a4, a7; vse16.v v24, (t4); vse16.v v25, (a5)
+    add  t4, t4, a6;   add  a5, a5, a6; vse16.v v26, (t4); vse16.v v27, (a5)
+    montmul_x4 v0, v1, v2, v3, v4, v5, v6, v7, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    addi t4, a0, 0*2;  add  a5, a0, a6; vle16.v v28, (t4); vle16.v v29, (a5)
+    add  t4, t4, t5;   add  a5, a5, t5; vle16.v v30, (t4); vle16.v v31, (a5)
+    # a0b0 + a1 * (b1zeta mod q); then accumulate
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    vadd.vv v20, v20, v28;  vadd.vv v21, v21, v29
+    vadd.vv v22, v22, v30;  vadd.vv v23, v23, v31
+    addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
+    add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
+    bltu a1, t2, poly_basemul_acc_cache_init_rvv_loop
 ret
 
-// void poly_basemul_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache);
-// basemul; b1zeta and b3zeta have been cached
-// (a0b0 + a1 * (b1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + a3 * (b3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
+// void poly_basemul_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
 .globl poly_basemul_cached_rvv
 .align 2
 poly_basemul_cached_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    li t5, 8
+    li a7, 32; addi t2, a1, 256*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  t3, a6, a7
 poly_basemul_cached_rvv_loop:
-    vle16.v v0, (a1);   addi a1, a1, 16 // a0
-    vle16.v v1, (a1);   addi a1, a1, 16 // a1
-    vle16.v v2, (a1);   addi a1, a1, 16 // a2
-    vle16.v v3, (a1);   addi a1, a1, 16 // a3
-    vle16.v v8,  (a2);  addi a2, a2, 16 // b0
-    vle16.v v9,  (a2);  addi a2, a2, 16 // b1
-    vle16.v v10, (a2);  addi a2, a2, 16 // b2
-    vle16.v v11, (a2);  addi a2, a2, 16 // b3
-    vle16.v v4,  (a4);  addi a4, a4, 16 // b1zeta
-    vle16.v v5,  (a4);  addi a4, a4, 16 // b3zeta
-    vmul.vv  v12, v0, v8        // a0b0.lo
-    vmul.vv  v13, v0, v9        // a0b1.lo
-    vmul.vv  v14, v1, v4        // a1(b1zeta).lo
-    vmul.vv  v15, v1, v8        // a1b0.lo
-    vmulh.vv v16, v0, v8        // a0b0.hi
-    vmulh.vv v17, v0, v9        // a0b1.hi
-    vmulh.vv v18, v1, v4        // a1(b1zeta).hi
-    vmulh.vv v19, v1, v8        // a1b0.hi
-    vmul.vx  v12, v12, t1       // *qinv
-    vmul.vx  v13, v13, t1       // *qinv
-    vmul.vx  v14, v14, t1       // *qinv
-    vmul.vx  v15, v15, t1       // *qinv
-    vmulh.vx v12, v12, t0       // *q
-    vmulh.vx v13, v13, t0       // *q
-    vmulh.vx v14, v14, t0       // *q
-    vmulh.vx v15, v15, t0       // *q
-    vsub.vv  v12, v16, v12      // a0b0
-    vsub.vv  v13, v17, v13      // a0b1
-    vsub.vv  v14, v18, v14      // b1(a1zeta)
-    vsub.vv  v15, v19, v15      // a1b0
-    vadd.vv  v12, v12, v14
-    vadd.vv  v13, v13, v15
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10       // a2b2.lo
-    vmul.vv  v17, v2, v11       // a2b3.lo
-    vmul.vv  v18, v3, v5        // a3(b3zeta).lo
-    vmul.vv  v19, v3, v10       // a3b2.lo
-    vmulh.vv v20, v2, v10       // a2b2.hi
-    vmulh.vv v21, v2, v11       // a2b3.hi
-    vmulh.vv v22, v3, v5        // a3(b3zeta).hi
-    vmulh.vv v23, v3, v10       // a3b2.hi
-    vmul.vx  v16, v16, t1       // *qinv
-    vmul.vx  v17, v17, t1       // *qinv
-    vmul.vx  v18, v18, t1       // *qinv
-    vmul.vx  v19, v19, t1       // *qinv
-    vmulh.vx v16, v16, t0       // *q
-    vmulh.vx v17, v17, t0       // *q
-    vmulh.vx v18, v18, t0       // *q
-    vmulh.vx v19, v19, t0       // *q
-    vsub.vv  v16, v20, v16      // a2b2
-    vsub.vv  v17, v21, v17      // a2b3
-    vsub.vv  v18, v22, v18      // b3(a3zeta)
-    vsub.vv  v19, v23, v19      // a3b2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_cached_rvv_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    # a0b1 + a1b0
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    add t4, a0, a7;   add a5, a0, t3;   vse16.v v16, (t4); vse16.v v17, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vse16.v v18, (t4); vse16.v v19, (a5)
+    # load b1zeta
+    addi t4, a4, 0*0;  add  a5, a4, a7; vle16.v v24, (t4); vle16.v v25, (a5)
+    add  t4, t4, a6;   add  a5, a5, a6; vle16.v v26, (t4); vle16.v v27, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v0, v1, v2, v3, v4, v5, v6, v7, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    # a0b0 + a1 * (b1zeta mod q)
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
+    add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a0, a0, t5;   add a4, a4, t5
+    bltu a1, t2, poly_basemul_cached_rvv_loop
 ret
 
-// void poly_basemul_acc_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache);
-// basemul_acc; b1zeta and b3zeta have been cached
-// (a0b0 + a1 * (b1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-// (a2b2 + a3 * (b3zeta mod q)) mod q + ((a2b3 + a3b2) mod q)x
+// void poly_basemul_acc_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
 .globl poly_basemul_acc_cached_rvv
 .align 2
 poly_basemul_acc_cached_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329     // q
-    li t1, -3327    // qinv
-    li t5, 8
+    li a7, 32; addi t2, a1, 256*2
+    vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
+    slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
+    add  t3, a6, a7
 poly_basemul_acc_cached_rvv_loop:
-    vle16.v v0, (a1);   addi a1, a1, 16 // a0
-    vle16.v v1, (a1);   addi a1, a1, 16 // a1
-    vle16.v v2, (a1);   addi a1, a1, 16 // a2
-    vle16.v v3, (a1);   addi a1, a1, 16 // a3
-    vle16.v v8,  (a2);  addi a2, a2, 16 // b0
-    vle16.v v9,  (a2);  addi a2, a2, 16 // b1
-    vle16.v v10, (a2);  addi a2, a2, 16 // b2
-    vle16.v v11, (a2);  addi a2, a2, 16 // b3
-    vle16.v v4,  (a4);  addi a4, a4, 16 // b1zeta
-    vle16.v v5,  (a4);  addi a4, a4, 16 // b3zeta
-    vmul.vv  v12, v0, v8        // a0b0.lo
-    vmul.vv  v13, v0, v9        // a0b1.lo
-    vmul.vv  v14, v1, v4        // a1(b1zeta).lo
-    vmul.vv  v15, v1, v8        // a1b0.lo
-    vmulh.vv v16, v0, v8        // a0b0.hi
-    vmulh.vv v17, v0, v9        // a0b1.hi
-    vmulh.vv v18, v1, v4        // a1(b1zeta).hi
-    vmulh.vv v19, v1, v8        // a1b0.hi
-    vmul.vx  v12, v12, t1       // *qinv
-    vmul.vx  v13, v13, t1       // *qinv
-    vmul.vx  v14, v14, t1       // *qinv
-    vmul.vx  v15, v15, t1       // *qinv
-    vmulh.vx v12, v12, t0       // *q
-    vmulh.vx v13, v13, t0       // *q
-    vmulh.vx v14, v14, t0       // *q
-    vmulh.vx v15, v15, t0       // *q
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vsub.vv  v12, v16, v12      // a0b0
-    vsub.vv  v13, v17, v13      // a0b1
-    vsub.vv  v14, v18, v14      // b1(a1zeta)
-    vsub.vv  v15, v19, v15      // a1b0
-    vadd.vv  v12, v12, v14
-    vadd.vv  v13, v13, v15
-    vadd.vv  v12, v12, v24
-    vadd.vv  v13, v13, v25
-    vse16.v  v12, (a0);     addi a0, a0, 16
-    vse16.v  v13, (a0);     addi a0, a0, 16
-    vmul.vv  v16, v2, v10       // a2b2.lo
-    vmul.vv  v17, v2, v11       // a2b3.lo
-    vmul.vv  v18, v3, v5        // a3(b3zeta).lo
-    vmul.vv  v19, v3, v10       // a3b2.lo
-    vmulh.vv v20, v2, v10       // a2b2.hi
-    vmulh.vv v21, v2, v11       // a2b3.hi
-    vmulh.vv v22, v3, v5        // a3(b3zeta).hi
-    vmulh.vv v23, v3, v10       // a3b2.hi
-    vmul.vx  v16, v16, t1       // *qinv
-    vmul.vx  v17, v17, t1       // *qinv
-    vmul.vx  v18, v18, t1       // *qinv
-    vmul.vx  v19, v19, t1       // *qinv
-    vmulh.vx v16, v16, t0       // *q
-    vmulh.vx v17, v17, t0       // *q
-    vmulh.vx v18, v18, t0       // *q
-    vmulh.vx v19, v19, t0       // *q
-    vle16.v  v24, (a0);     addi a0, a0, 16
-    vle16.v  v25, (a0);     addi a0, a0, -16
-    vsub.vv  v16, v20, v16      // a2b2
-    vsub.vv  v17, v21, v17      // a2b3
-    vsub.vv  v18, v22, v18      // b3(a3zeta)
-    vsub.vv  v19, v23, v19      // a3b2
-    vadd.vv  v16, v16, v18
-    vadd.vv  v17, v17, v19
-    vadd.vv  v16, v16, v24
-    vadd.vv  v17, v17, v25
-    vse16.v  v16, (a0);     addi a0, a0, 16
-    vse16.v  v17, (a0);     addi a0, a0, 16
-    addi t5, t5, -1
-    bnez t5, poly_basemul_acc_cached_rvv_loop
-ret
-
-.macro intt_rvv_level0to5 off
-    // level 0
-    addi t3, a0, (\off*128)*2 # a[0] or a[128]
-    addi t4, a1, _MASK_10101010*2   # for shuffle1
-    vle16.v v0, (t4)
-    addi t4, a1, _MASK_10325476*2
-    vle16.v v27, (t4)
-    vle16.v v9,  (t3);  addi t3, t3, 16
-    vle16.v v10, (t3);  addi t3, t3, 16
-    vle16.v v11, (t3);  addi t3, t3, 16
-    vle16.v v12, (t3);  addi t3, t3, 16
-    li t1, 1441     // mont^2/128
-    li t2, -10079   // qinv(mont^2/128)
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L0+ \off*_ZETA_EXP_INTT_0TO5_P1_L0)*2
-    add t4, a1, t5
-    shuffle1 v1, v2, v9, v10, v27
-    shuffle1 v3, v4, v11,v12, v27
-    vmul.vx  v9,  v1, t2
-    vmul.vx  v10, v2, t2
-    vmul.vx  v11, v3, t2
-    vmul.vx  v12, v4, t2
-    vmulh.vx v1, v1, t1
-    vmulh.vx v2, v2, t1
-    vmulh.vx v3, v3, t1
-    vmulh.vx v4, v4, t1
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v10, v10, t0
-    vmulh.vx v11, v11, t0
-    vmulh.vx v12, v12, t0
-    vle16.v v13, (t3);  addi t3, t3, 16
-    vle16.v v14, (t3);  addi t3, t3, 16
-    vsub.vv  v1, v1, v9
-    vsub.vv  v2, v2, v10
-    vle16.v v15, (t3);  addi t3, t3, 16
-    vle16.v v16, (t3);  addi t3, t3, 16
-    vsub.vv  v3, v3, v11
-    vsub.vv  v4, v4, v12
-    shuffle1 v5, v6, v13, v14, v27
-    shuffle1 v7, v8, v15, v16, v27
-    vmul.vx  v13, v5, t2
-    vmul.vx  v14, v6, t2
-    vmul.vx  v15, v7, t2
-    vmul.vx  v16, v8, t2
-    vmulh.vx v5, v5, t1
-    vmulh.vx v6, v6, t1
-    vmulh.vx v7, v7, t1
-    vmulh.vx v8, v8, t1
-    vmulh.vx v13, v13,  t0
-    vmulh.vx v14, v14, t0
-    vmulh.vx v15, v15, t0
-    vmulh.vx v16, v16, t0
-    vsub.vv  v5, v5, v13
-    vsub.vv  v6, v6, v14
-    vsub.vv  v7, v7, v15
-    vsub.vv  v8, v8, v16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4);  addi t4, t4, 16
-    vle16.v v24, (t4);  addi t4, t4, 16
-    vle16.v v23, (t4);  addi t4, t4, 16
-    vadd.vv v9,  v1,  v2
-    vsub.vv v10, v1,  v2
-    vadd.vv v11, v3,  v4
-    vsub.vv v12, v3,  v4
-    vadd.vv v13, v5,  v6
-    vsub.vv v14, v5,  v6
-    vadd.vv v15, v7,  v8
-    vsub.vv v16, v7,  v8
-    vmul.vv v1, v10, v26
-    vmulh.vv v10, v10, v25
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4);  addi t4, t4, 16
-    vmul.vv v2, v12, v24
-    vmulh.vv v12, v12, v23
-    vle16.v v24, (t4);  addi t4, t4, 16
-    vle16.v v23, (t4);  addi t4, t4, 16
-    vmul.vv v3, v14, v26
-    vmulh.vv v14, v14, v25
-    vmul.vv v4, v16, v24
-    vmulh.vv v16, v16, v23
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vle16.v v17, (t3);  addi t3, t3, 16
-    vle16.v v18, (t3);  addi t3, t3, 16
-    vsub.vv  v10, v10, v1
-    vsub.vv  v12, v12, v2
-    vle16.v v19, (t3);  addi t3, t3, 16
-    vle16.v v20, (t3);  addi t3, t3, 16
-    vsub.vv  v14, v14, v3
-    vsub.vv  v16, v16, v4
-    // v9,v10,v11,v12,v13,v14,v15,v16
-    shuffle1 v1, v2, v17, v18, v27
-    shuffle1 v3, v4, v19, v20, v27
-    vmul.vx  v17, v1, t2
-    vmul.vx  v18, v2, t2
-    vmul.vx  v19, v3, t2
-    vmul.vx  v20, v4, t2
-    vmulh.vx v1, v1, t1
-    vmulh.vx v2, v2, t1
-    vmulh.vx v3, v3, t1
-    vmulh.vx v4, v4, t1
-    vmulh.vx v17, v17,  t0
-    vmulh.vx v18, v18, t0
-    vmulh.vx v19, v19, t0
-    vmulh.vx v20, v20, t0
-    vle16.v v21, (t3);  addi t3, t3, 16
-    vle16.v v22, (t3);  addi t3, t3, 16
-    vsub.vv  v1, v1, v17
-    vsub.vv  v2, v2, v18
-    vle16.v v23, (t3);  addi t3, t3, 16
-    vle16.v v24, (t3);  addi t3, t3, 16
-    vsub.vv  v3, v3, v19
-    vsub.vv  v4, v4, v20
-    shuffle1 v5, v6, v21, v22, v27
-    shuffle1 v7, v8, v23, v24, v27
-    vmul.vx  v21, v5, t2
-    vmul.vx  v22, v6, t2
-    vmul.vx  v23, v7, t2
-    vmul.vx  v24, v8, t2
-    vmulh.vx v5, v5, t1
-    vmulh.vx v6, v6, t1
-    vmulh.vx v7, v7, t1
-    vmulh.vx v8, v8, t1
-    vmulh.vx v21, v21,  t0
-    vmulh.vx v22, v22, t0
-    vmulh.vx v23, v23, t0
-    vmulh.vx v24, v24, t0
-    vsub.vv  v5, v5, v21
-    vsub.vv  v6, v6, v22
-    vsub.vv  v7, v7, v23
-    vsub.vv  v8, v8, v24
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4);  addi t4, t4, 16
-    vadd.vv v17, v1, v2
-    vsub.vv v18, v1, v2
-    vadd.vv v19, v3, v4
-    vsub.vv v20, v3, v4
-    vadd.vv v21, v5, v6
-    vsub.vv v22, v5, v6
-    vadd.vv v23, v7, v8
-    vsub.vv v24, v7, v8
-    vmul.vv  v1,  v18, v26
-    vmulh.vv v18, v18, v25
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4);  addi t4, t4, 16
-    vmul.vv  v2,  v20, v26
-    vmulh.vv v20, v20, v25
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4);  addi t4, t4, 16
-    vmul.vv  v3,  v22, v26
-    vmulh.vv v22, v22, v25
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vle16.v v25, (t4)
-    vmul.vv  v4,  v24, v26
-    vmulh.vv v24, v24, v25
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v18, v18, v1
-    vsub.vv  v20, v20, v2
-    addi t4, a1, _MASK_11001100*2
-    vle16.v v0, (t4)
-    vsub.vv  v22, v22, v3
-    vsub.vv  v24, v24, v4
-    // v9, v10,v11,v12,v13,v14,v15,v16
-    // v17,v18,v19,v20,v21,v22,v23,v24
-    // level1
-    shuffle2 v1, v2, v9,  v10, v29, v28
-    shuffle2 v3, v4, v11, v12, v29, v28
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L1+ \off*_ZETA_EXP_INTT_0TO5_P1_L1)*2
-    add t4, a1, t5
-    shuffle2 v5, v6, v13, v14, v29, v28
-    shuffle2 v7, v8, v15, v16, v29, v28
-    vadd.vv v9,  v1, v2
-    vsub.vv v10, v1, v2
-    vadd.vv v11, v3, v4
-    vsub.vv v12, v3, v4
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vadd.vv v13, v5, v6
-    vsub.vv v14, v5, v6
-    vadd.vv v15, v7, v8
-    vsub.vv v16, v7, v8
-    vmul.vv  v1,  v10, v27
-    vmulh.vv v10, v10, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vmul.vv  v2,  v12, v27
-    vmulh.vv v12, v12, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vmul.vv  v3,  v14, v27
-    vmulh.vv v14, v14, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vmul.vv  v4,  v16, v27
-    vmulh.vv v16, v16, v26
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v10, v10, v1
-    vsub.vv  v12, v12, v2
-    shuffle2 v1, v2, v17, v18, v29, v28
-    vsub.vv  v14, v14, v3
-    vsub.vv  v16, v16, v4
-    // v9,v10,v11,v12,v13,v14,v15,v16
-    shuffle2 v3, v4, v19, v20, v29, v28
-    vadd.vv v17, v1, v2
-    vsub.vv v18, v1, v2
-    shuffle2 v5, v6, v21, v22, v29, v28
-    vadd.vv v19, v3, v4
-    vsub.vv v20, v3, v4
-    shuffle2 v7, v8, v23, v24, v29, v28
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vadd.vv v21, v5, v6
-    vsub.vv v22, v5, v6
-    vadd.vv v23, v7, v8
-    vsub.vv v24, v7, v8
-    vmul.vv  v1,  v18, v27
-    vmulh.vv v18, v18, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vmul.vv  v2,  v20, v27
-    vmulh.vv v20, v20, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4);  addi t4, t4, 16
-    vmul.vv  v3,  v22, v27
-    vmulh.vv v22, v22, v26
-    vle16.v v27, (t4);  addi t4, t4, 16
-    vle16.v v26, (t4)
-    vmul.vv  v4,  v24, v27
-    vmulh.vv v24, v24, v26
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v18, v18, v1
-    vsub.vv  v20, v20, v2
-    vsub.vv  v22, v22, v3
-    vsub.vv  v24, v24, v4
-    // v9, v10,v11,v12,v13,v14,v15,v16
-    // v17,v18,v19,v20,v21,v22,v23,v24
-    // level 2
-    addi t4, a1, _MASK_11110000*2
-    vle16.v v0, (t4)
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L2+ \off*_ZETA_EXP_INTT_0TO5_P1_L2)*2
-    add t4, a1, t5
-    shuffle4 v1, v2, v9,  v10, v31, v30
-    lh t2, 0*2(t4);     lh t1, 1*2(t4)
-    lh t6, 2*2(t4);     lh t5, 3*2(t4)
-    shuffle4 v3, v4, v11, v12, v31, v30
-    lh a3, 4*2(t4);     lh a2, 5*2(t4)
-    lh a5, 6*2(t4);     lh a4, 7*2(t4)
-    shuffle4 v5, v6, v13, v14, v31, v30
-    vadd.vv v9,  v1, v2
-    vsub.vv v10, v1, v2
-    shuffle4 v7, v8, v15, v16, v31, v30
-    vadd.vv v11, v3, v4
-    vsub.vv v12, v3, v4
-    vadd.vv v13, v5, v6
-    vsub.vv v14, v5, v6
-    vadd.vv v15, v7, v8
-    vsub.vv v16, v7, v8
-    vmul.vx  v1,  v10, t2
-    vmulh.vx v10, v10, t1
-    vmul.vx  v2,  v12, t6
-    vmulh.vx v12, v12, t5
-    vmul.vx  v3,  v14, a3
-    vmulh.vx v14, v14, a2
-    vmul.vx  v4,  v16, a5
-    vmulh.vx v16, v16, a4
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v10, v10, v1
-    vsub.vv  v12, v12, v2
-    vsub.vv  v14, v14, v3
-    vsub.vv  v16, v16, v4
-    // v9,v10,v11,v12,v13,v14,v15,v16
-    shuffle4 v1, v2, v17, v18, v31, v30
-    lh t2, 8*2(t4);         lh t1, 9*2(t4)
-    lh t6, 10*2(t4);        lh t5, 11*2(t4)
-    shuffle4 v3, v4, v19, v20, v31, v30
-    lh a3, 12*2(t4);        lh a2, 13*2(t4)
-    lh a5, 14*2(t4);        lh a4, 15*2(t4)
-    shuffle4 v5, v6, v21, v22, v31, v30
-    vadd.vv v17, v1, v2
-    vsub.vv v18, v1, v2
-    shuffle4 v7, v8, v23, v24, v31, v30
-    vadd.vv v19, v3, v4
-    vsub.vv v20, v3, v4
-    vadd.vv v21, v5, v6
-    vsub.vv v22, v5, v6
-    vadd.vv v23, v7, v8
-    vsub.vv v24, v7, v8
-    vmul.vx  v1,  v18, t2
-    vmulh.vx v18, v18, t1
-    vmul.vx  v2,  v20, t6
-    vmulh.vx v20, v20, t5
-    vmul.vx  v3,  v22, a3
-    vmulh.vx v22, v22, a2
-    vmul.vx  v4,  v24, a5
-    vmulh.vx v24, v24, a4
-    vmulh.vx v1, v1, t0
-    vmulh.vx v2, v2, t0
-    vmulh.vx v3, v3, t0
-    vmulh.vx v4, v4, t0
-    vsub.vv  v18, v18, v1
-    vsub.vv  v20, v20, v2
-    vsub.vv  v22, v22, v3
-    vsub.vv  v24, v24, v4
-    // v9, v10,v11,v12,v13,v14,v15,v16
-    // v17,v18,v19,v20,v21,v22,v23,v24
-    barrettRdcX4 v9,  v11, v13, v15, v1, v2, v3, v4, a6, t0
-    barrettRdcX4 v17, v19, v21, v23, v1, v2, v3, v4, a6, t0
-    // level 3
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L3+ \off*_ZETA_EXP_INTT_0TO5_P1_L3)*2
-    add t4, a1, t5
-    lh t2, 0*2(t4);     lh t1, 1*2(t4)
-    lh t6, 2*2(t4);     lh t5, 3*2(t4)
-    lh a3, 4*2(t4);     lh a2, 5*2(t4)
-    lh a5, 6*2(t4);     lh a4, 7*2(t4)
-    vadd.vv v1, v9,  v11
-    vadd.vv v2, v10, v12
-    vsub.vv v3, v9,  v11
-    vsub.vv v4, v10, v12
-    vadd.vv v5, v13, v15
-    vadd.vv v6, v14, v16
-    vsub.vv v7, v13, v15
-    vsub.vv v8, v14, v16
-    vmul.vx  v9, v3, t2
-    vmulh.vx v3, v3, t1
-    vmul.vx  v10,v4, t2
-    vmulh.vx v4, v4, t1
-    vmul.vx  v11, v7,t6
-    vmulh.vx v7, v7, t5
-    vmul.vx  v12,v8, t6
-    vmulh.vx v8, v8, t5
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v10, v10, t0
-    vmulh.vx v11, v11, t0
-    vmulh.vx v12, v12, t0
-    vsub.vv  v3, v3, v9
-    vsub.vv  v4, v4, v10
-    vsub.vv  v7, v7, v11
-    vsub.vv  v8, v8, v12
-    // v1,v2,v3,v4,v5,v6,v7,v8
-    vadd.vv v9, v17, v19
-    vadd.vv v10,v18, v20
-    vsub.vv v11, v17, v19
-    vsub.vv v12, v18, v20
-    vadd.vv v13, v21, v23
-    vadd.vv v14, v22, v24
-    vsub.vv v15, v21, v23
-    vsub.vv v16, v22, v24
-    vmul.vx  v17, v11, a3
-    vmulh.vx v11, v11, a2
-    vmul.vx  v18, v12, a3
-    vmulh.vx v12, v12, a2
-    vmul.vx  v19, v15, a5
-    vmulh.vx v15, v15, a4
-    vmul.vx  v20, v16, a5
-    vmulh.vx v16, v16, a4
-    vmulh.vx v17, v17, t0
-    vmulh.vx v18, v18, t0
-    vmulh.vx v19, v19, t0
-    vmulh.vx v20, v20, t0
-    vsub.vv  v11, v11, v17
-    vsub.vv  v12, v12, v18
-    vsub.vv  v15, v15, v19
-    vsub.vv  v16, v16, v20
-    // v1,v2,v3,v4,v5,v6,v7,v8
-    // v9,v10,v11,v12,v13,v14,v15,v16
-    // level 4
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L4+ \off*_ZETA_EXP_INTT_0TO5_P1_L4)*2
-    add t4, a1, t5
-    lh t2, 0*2(t4);     lh t1, 1*2(t4)
-    lh t6, 2*2(t4);     lh t5, 3*2(t4)
-    vadd.vv v17, v1, v5
-    vadd.vv v18, v2, v6
-    vadd.vv v19, v3, v7
-    vadd.vv v20, v4, v8
-    vsub.vv v21, v1, v5
-    vsub.vv v22, v2, v6
-    vsub.vv v23, v3, v7
-    vsub.vv v24, v4, v8
-    vmul.vx  v1,  v21, t2
-    vmulh.vx v21, v21, t1
-    vmul.vx  v2,  v22, t2
-    vmulh.vx v22, v22, t1
-    vmul.vx  v3,  v23, t2
-    vmulh.vx v23, v23, t1
-    vmul.vx  v4,  v24, t2
-    vmulh.vx v24, v24, t1
-    vmulh.vx v1,  v1, t0
-    vmulh.vx v2,  v2, t0
-    vmulh.vx v3,  v3, t0
-    vmulh.vx v4,  v4, t0
-    vsub.vv  v21, v21, v1
-    vsub.vv  v22, v22, v2
-    vsub.vv  v23, v23, v3
-    vsub.vv  v24, v24, v4
-    // v17,v18,v19,v20,v21,v22,v23,v24
-    vadd.vv v1, v9,  v13
-    vadd.vv v2, v10, v14
-    vadd.vv v3, v11, v15
-    vadd.vv v4, v12, v16
-    vsub.vv v5, v9,  v13
-    vsub.vv v6, v10, v14
-    vsub.vv v7, v11, v15
-    vsub.vv v8, v12, v16
-    vmul.vx  v9, v5, t6
-    vmulh.vx v5, v5, t5
-    vmul.vx  v10,v6, t6
-    vmulh.vx v6, v6, t5
-    vmul.vx  v11,v7, t6
-    vmulh.vx v7, v7, t5
-    vmul.vx  v12,v8, t6
-    vmulh.vx v8, v8, t5
-    vmulh.vx v9, v9,  t0
-    vmulh.vx v10,v10, t0
-    vmulh.vx v11,v11, t0
-    vmulh.vx v12,v12, t0
-    vsub.vv  v5, v5, v9
-    vsub.vv  v6, v6, v10
-    vsub.vv  v7, v7, v11
-    vsub.vv  v8, v8, v12
-    // v17,v18,v19,v20,v21,v22,v23,v24
-    // v1,v2,v3,v4,v5,v6,v7,v8
-    // level 5
-    li t5, ((1-\off)*_ZETA_EXP_INTT_0TO5_P0_L5+ \off*_ZETA_EXP_INTT_0TO5_P1_L5)*2
-    add t4, a1, t5
-    lh t2, 0*2(t4);     lh t1, 1*2(t4)
-    vadd.vv v9,  v17, v1
-    vadd.vv v10, v18, v2
-    vadd.vv v11, v19, v3
-    vadd.vv v12, v20, v4
-    vsub.vv v13, v17, v1
-    vsub.vv v14, v18, v2
-    vsub.vv v15, v19, v3
-    vsub.vv v16, v20, v4
-    barrettRdc v9, v17, a6, t0
-    addi t3, a0, (\off*128)*2 # a[0] or a[128]
-    vse16.v v9,  (t3);  addi t3, t3, 16
-    vmul.vx  v17, v13, t2
-    vmulh.vx v13, v13, t1
-    vse16.v v10, (t3);  addi t3, t3, 16
-    vmul.vx  v18, v14, t2
-    vmulh.vx v14, v14, t1
-    vse16.v v11, (t3);  addi t3, t3, 16
-    vmul.vx  v19, v15, t2
-    vmulh.vx v15, v15, t1
-    vse16.v v12, (t3);  addi t3, t3, 16
-    vmul.vx  v20, v16, t2
-    vmulh.vx v16, v16, t1
-    vmulh.vx v17, v17, t0
-    vmulh.vx v18, v18, t0
-    vmulh.vx v19, v19, t0
-    vmulh.vx v20, v20, t0
-    vsub.vv  v13, v13, v17
-    vsub.vv  v14, v14, v18
-    vsub.vv  v15, v15, v19
-    vsub.vv  v16, v16, v20
-    vadd.vv v1, v21, v5
-    vadd.vv v2, v22, v6
-    vadd.vv v3, v23, v7
-    vadd.vv v4, v24, v8
-    vsub.vv v5, v21, v5
-    vsub.vv v6, v22, v6
-    vsub.vv v7, v23, v7
-    vsub.vv v8, v24, v8
-    vse16.v v1, (t3);  addi t3, t3, 16
-    vmul.vx  v21, v5, t2
-    vmulh.vx v5,  v5, t1
-    vse16.v v2, (t3);  addi t3, t3, 16
-    vmul.vx  v22, v6, t2
-    vmulh.vx v6,  v6, t1
-    vse16.v v3, (t3);  addi t3, t3, 16
-    vmul.vx  v23, v7, t2
-    vmulh.vx v7,  v7, t1
-    vse16.v v4, (t3);  addi t3, t3, 16
-    vmul.vx  v24, v8, t2
-    vmulh.vx v8,  v8, t1
-    addi t3, a0, (64+\off*128)*2 # a[64] or a[192]
-    vse16.v v13, (t3);  addi t3, t3, 16
-    vmulh.vx v21, v21, t0
-    vmulh.vx v22, v22, t0
-    vse16.v v14, (t3);  addi t3, t3, 16
-    vmulh.vx v23, v23, t0
-    vmulh.vx v24, v24, t0
-    vse16.v v15, (t3);  addi t3, t3, 16
-    vsub.vv  v5,  v5, v21
-    vsub.vv  v6,  v6, v22
-    vse16.v v16, (t3);  addi t3, t3, 16
-    vsub.vv  v7,  v7, v23
-    vsub.vv  v8,  v8, v24
-    // v9,v10,v11,v12, v1,v2,v3,v4
-    // v13,v14,v15,v16,v5,v6,v7,v8
-    vse16.v v5, (t3);  addi t3, t3, 16
-    vse16.v v6, (t3);  addi t3, t3, 16
-    vse16.v v7, (t3);  addi t3, t3, 16
-    vse16.v v8, (t3);  addi t3, t3, 16
-.endm
-
-.macro intt_rvv_level6 off
-    addi t3, a0, (\off*64)*2 # a[0] or a[64]
-    vle16.v v9,  (t3);  addi t3, t3, 16
-    vle16.v v10, (t3);  addi t3, t3, 16
-    vle16.v v11, (t3);  addi t3, t3, 16
-    vle16.v v12, (t3)
-    addi t3, a0, (128+\off*64)*2 # a[128] or a[192]
-    vle16.v v13, (t3);  addi t3, t3, 16
-    vle16.v v14, (t3);  addi t3, t3, 16
-    vle16.v v15, (t3);  addi t3, t3, 16
-    vle16.v v16, (t3)
-    vadd.vv v1, v9,  v13
-    vadd.vv v2, v10, v14
-    vadd.vv v3, v11, v15
-    vadd.vv v4, v12, v16
-    vsub.vv v5, v9,  v13
-    vsub.vv v6, v10, v14
-    vsub.vv v7, v11, v15
-    vsub.vv v8, v12, v16
-    addi t3, a0, (\off*64)*2 # a[0] or a[64]
-    vse16.v v1, (t3);  addi t3, t3, 16
-    vmul.vx  v9,  v5, t2
-    vmul.vx  v10, v6, t2
-    vse16.v v2, (t3);  addi t3, t3, 16
-    vmul.vx  v11, v7, t2
-    vmul.vx  v12, v8, t2
-    vse16.v v3, (t3);  addi t3, t3, 16
-    vmulh.vx v5, v5, t1
-    vmulh.vx v6, v6, t1
-    vse16.v v4, (t3);  addi t3, t3, 16
-    vmulh.vx v7, v7, t1
-    vmulh.vx v8, v8, t1
-    vle16.v v17, (t3);  addi t3, t3, 16
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v10, v10, t0
-    vle16.v v18, (t3);  addi t3, t3, 16
-    vmulh.vx v11, v11, t0
-    vmulh.vx v12, v12, t0
-    vle16.v v19, (t3);  addi t3, t3, 16
-    vsub.vv  v5, v5, v9
-    vsub.vv  v6, v6, v10
-    vle16.v v20, (t3)
-    vsub.vv  v7, v7, v11
-    vsub.vv  v8, v8, v12
-    addi t3, a0, (128+\off*64)*2 # a[128] or a[192]
-    vse16.v v5, (t3);  addi t3, t3, 16
-    vse16.v v6, (t3);  addi t3, t3, 16
-    vse16.v v7, (t3);  addi t3, t3, 16
-    vse16.v v8, (t3);  addi t3, t3, 16
-    vle16.v v21, (t3);  addi t3, t3, 16
-    vle16.v v22, (t3);  addi t3, t3, 16
-    vle16.v v23, (t3);  addi t3, t3, 16
-    vle16.v v24, (t3)
-    vadd.vv v1, v17, v21
-    vadd.vv v2, v18, v22
-    vadd.vv v3, v19, v23
-    vadd.vv v4, v20, v24
-    vsub.vv v5, v17, v21
-    vsub.vv v6, v18, v22
-    vsub.vv v7, v19, v23
-    vsub.vv v8, v20, v24
-    addi t3, a0, (32+\off*64)*2 # a[0] or a[64]
-    vse16.v v1, (t3);  addi t3, t3, 16
-    vmul.vx  v9,  v5, t2
-    vmul.vx  v10, v6, t2
-    vse16.v v2, (t3);  addi t3, t3, 16
-    vmul.vx  v11, v7, t2
-    vmul.vx  v12, v8, t2
-    vse16.v v3, (t3);  addi t3, t3, 16
-    vmulh.vx v5, v5, t1
-    vmulh.vx v6, v6, t1
-    vse16.v v4, (t3)
-    vmulh.vx v7, v7, t1
-    vmulh.vx v8, v8, t1
-    vmulh.vx v9,  v9,  t0
-    vmulh.vx v10, v10, t0
-    vmulh.vx v11, v11, t0
-    vmulh.vx v12, v12, t0
-    vsub.vv  v5, v5, v9
-    vsub.vv  v6, v6, v10
-    vsub.vv  v7, v7, v11
-    vsub.vv  v8, v8, v12
-    addi t3, a0, (32+128+\off*64)*2 # a[128] or a[192]
-    vse16.v v5, (t3);  addi t3, t3, 16
-    vse16.v v6, (t3);  addi t3, t3, 16
-    vse16.v v7, (t3);  addi t3, t3, 16
-    vse16.v v8, (t3)
-.endm
-
-// register usage:
-// t0 = Q
-// t1/t2, t5/t6, a2/a3, a4/a5: zeta/zeta*qinv
-// a6: const_v for barrett reduction
-// t3: address related to the input polynomial
-// t4: address related to the pre-computed table
-// v0: mask used for vmerge.vvm instruction
-// v28~v31: masks used for shuffle4/2
-.globl intt_rvv
-.align 2
-intt_rvv:
-    vsetivli t2, 8, e16, m1, tu, mu
-    li t0, 3329
-    li a6, 20159
-    // load some masks used by shuffle4/2/1
-    addi t4, a1, _MASK_45674567*2
-    vle16.v v31, (t4)
-    addi t4, a1, _MASK_01230123*2
-    vle16.v v30, (t4)
-    addi t4, a1, _MASK_00010045*2
-    vle16.v v29, (t4)
-    addi t4, a1, _MASK_23006700*2
-    vle16.v v28, (t4)
-    intt_rvv_level0to5 0
-    intt_rvv_level0to5 1
-
-    li t5, _ZETA_EXP_INTT_L6*2
-    add t4, a1, t5
-    lh t2, (t4)
-    lh t1, 2(t4)
-    intt_rvv_level6 0
-    intt_rvv_level6 1
-ret
-
-// input:
-// [a0,a2,a4,a6,a8,a10,a12,a14], [a1,a3,a5,a7,a9,a11,a13,a15]
-// [a16,a18,a20,a22,a24,a26,a28,a30], [a17,a19,a21,a23,a25,a27,a29,a31]
-// ...
-// out:
-// a0~a7, a8~a15, a16~a23, a24~a31, ......
-.globl ntt2normal_order
-.align 2
-ntt2normal_order:
-    vsetivli t2, 8, e16, m1, tu, mu
-    // for vrgather
-    addi t4, a2, _MASK_45674567*2
-    vle16.v v31, (t4)
-    addi t4, a2, _MASK_01230123*2
-    vle16.v v30, (t4)
-    addi t4, a2, _MASK_00010045*2
-    vle16.v v29, (t4)
-    addi t4, a2, _MASK_23006700*2
-    vle16.v v28, (t4)
-    addi t4, a2, _MASK_10325476*2
-    vle16.v v27, (t4)
-    // for vmerge
-    addi t4, a2, _MASK_11110000*2
-    vle16.v v26, (t4)   # for shuffle4
-    addi t4, a2, _MASK_11001100*2
-    vle16.v v25, (t4)   # for shuffle2
-    addi t4, a2, _MASK_10101010*2
-    vle16.v v24, (t4)   # for shuffle1
-    li a2, 4
-ntt2normal_order_loop:
-    vle16.v v1, (a1);       addi a1, a1, 16
-    vle16.v v2, (a1);       addi a1, a1, 16
-    vle16.v v3, (a1);       addi a1, a1, 16
-    vle16.v v4, (a1);       addi a1, a1, 16
-    vmv.v.v v0, v24
-    shuffle1 v9,  v10, v1, v2, v27
-    shuffle1 v11, v12, v3, v4, v27
-    vle16.v v5, (a1);       addi a1, a1, 16
-    vle16.v v6, (a1);       addi a1, a1, 16
-    vle16.v v7, (a1);       addi a1, a1, 16
-    vle16.v v8, (a1);       addi a1, a1, 16
-    shuffle1 v13, v14, v5, v6, v27
-    shuffle1 v15, v16, v7, v8, v27
-    vmv.v.v v0, v25
-    shuffle2 v1, v2, v9,  v10, v29, v28
-    shuffle2 v3, v4, v11, v12, v29, v28
-    vmv.v.v v0, v26
-    shuffle4 v9,  v10, v1, v2, v31, v30
-    shuffle4 v11, v12, v3, v4, v31, v30
-    vse16.v v9,  (a0);       addi a0, a0, 16
-    vse16.v v10, (a0);       addi a0, a0, 16
-    vse16.v v11, (a0);       addi a0, a0, 16
-    vse16.v v12, (a0);       addi a0, a0, 16
-    vmv.v.v v0, v25
-    shuffle2 v5, v6, v13, v14, v29, v28
-    shuffle2 v7, v8, v15, v16, v29, v28
-    vmv.v.v v0, v26
-    shuffle4 v13,v14,v5,  v6,  v31, v30
-    shuffle4 v15,v16,v7,  v8,  v31, v30
-    vse16.v v13, (a0);       addi a0, a0, 16
-    vse16.v v14, (a0);       addi a0, a0, 16
-    vse16.v v15, (a0);       addi a0, a0, 16
-    vse16.v v16, (a0);       addi a0, a0, 16
-    addi a2, a2, -1
-    bnez a2, ntt2normal_order_loop
-ret
-
-// input:
-// a0~a7, a8~a15, a16~a23, a24~a31, ......
-// out:
-// [a0,a2,a4,a6,a8,a10,a12,a14], [a1,a3,a5,a7,a9,a11,a13,a15]
-// [a16,a18,a20,a22,a24,a26,a28,a30], [a17,a19,a21,a23,a25,a27,a29,a31]
-// ...
-.globl normal2ntt_order
-.align 2
-normal2ntt_order:
-    vsetivli t2, 8, e16, m1, tu, mu
-    // for vrgather
-    addi t4, a2, _MASK_45674567*2
-    vle16.v v31, (t4)
-    addi t4, a2, _MASK_01230123*2
-    vle16.v v30, (t4)
-    addi t4, a2, _MASK_00010045*2
-    vle16.v v29, (t4)
-    addi t4, a2, _MASK_23006700*2
-    vle16.v v28, (t4)
-    addi t4, a2, _MASK_10325476*2
-    vle16.v v27, (t4)
-    // for vmerge
-    addi t4, a2, _MASK_11110000*2
-    vle16.v v26, (t4)   # for shuffle4
-    addi t4, a2, _MASK_11001100*2
-    vle16.v v25, (t4)   # for shuffle2
-    addi t4, a2, _MASK_10101010*2
-    vle16.v v24, (t4)   # for shuffle1
-    li a2, 4
-normal2ntt_order_loop:
-    vle16.v v1, (a1);        addi a1, a1, 16
-    vle16.v v2, (a1);        addi a1, a1, 16
-    vle16.v v3, (a1);        addi a1, a1, 16
-    vle16.v v4, (a1);        addi a1, a1, 16
-    vmv.v.v v0, v26
-    shuffle4 v5, v6, v1, v2, v31, v30   # v5, v6 = [a0~a3, a8~a11], [a4~a7,  a12~a15]
-    shuffle4 v7, v8, v3, v4, v31, v30
-    vle16.v v9,  (a1);       addi a1, a1, 16
-    vle16.v v10, (a1);       addi a1, a1, 16
-    vle16.v v11, (a1);       addi a1, a1, 16
-    vle16.v v12, (a1);       addi a1, a1, 16
-    shuffle4 v13,v14,v9, v10,v31, v30
-    shuffle4 v15,v16,v11,v12,v31, v30
-    vmv.v.v v0, v25
-    shuffle2 v1, v2, v5, v6, v29, v28   # v1, v2 = [a0~a1,a4~a5,a8~a9,a12~a13], [a2~a3,a6~a7,a10~a11,a14~a15]
-    shuffle2 v3, v4, v7, v8, v29, v28
-    shuffle2 v9, v10,v13,v14,v29, v28
-    shuffle2 v11,v12,v15,v16,v29, v28
-    vmv.v.v v0, v24
-    shuffle1 v5, v6, v1, v2, v27
-    shuffle1 v7, v8, v3, v4, v27
-    vse16.v v5, (a0);       addi a0, a0, 16
-    vse16.v v6, (a0);       addi a0, a0, 16
-    vse16.v v7, (a0);       addi a0, a0, 16
-    vse16.v v8, (a0);       addi a0, a0, 16
-    shuffle1 v13,v14,v9, v10,v27
-    shuffle1 v15,v16,v11,v12,v27
-    vse16.v v13, (a0);      addi a0, a0, 16
-    vse16.v v14, (a0);      addi a0, a0, 16
-    vse16.v v15, (a0);      addi a0, a0, 16
-    vse16.v v16, (a0);      addi a0, a0, 16
-    addi a2, a2, -1
-    bnez a2, normal2ntt_order_loop
+    vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v5, (a1); vle16.v v13, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v2, (a1); vle16.v v10, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v6, (a1); vle16.v v14, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v3, (a1); vle16.v v11, (a2); add a1, a1, a7; add a2, a2, a7
+    vle16.v v7, (a1); vle16.v v15, (a2); add a1, a1, a7; add a2, a2, a7
+    montmul_x4 v16, v17, v18, v19, v0, v1, v2, v3, \
+        v12, v13, v14, v15, t0, t1, v24, v25, v26, v27
+    montmul_x4 v20, v21, v22, v23, v4, v5, v6, v7, \
+        v8,  v9,  v10, v11, t0, t1, v24, v25, v26, v27
+    add t4, a0, a7;   add a5, a0, t3;   vle16.v v24, (t4); vle16.v v25, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vle16.v v26, (t4); vle16.v v27, (a5)
+    # a0b1 + a1b0; then accumulate
+    vadd.vv v16, v16, v20;  vadd.vv v17, v17, v21
+    vadd.vv v18, v18, v22;  vadd.vv v19, v19, v23
+    vadd.vv v16, v16, v24;  vadd.vv v17, v17, v25
+    vadd.vv v18, v18, v26;  vadd.vv v19, v19, v27
+    add t4, a0, a7;   add a5, a0, t3;   vse16.v v16, (t4); vse16.v v17, (a5)
+    add t4, t4, t5;   add a5, a5, t5;   vse16.v v18, (t4); vse16.v v19, (a5)
+    # load b1zeta
+    addi t4, a4, 0*0;  add  a5, a4, a7; vle16.v v24, (t4); vle16.v v25, (a5)
+    add  t4, t4, a6;   add  a5, a5, a6; vle16.v v26, (t4); vle16.v v27, (a5)
+    montmul_x4 v20, v21, v22, v23, v0, v1, v2, v3, \
+        v8,  v9,  v10, v11, t0, t1, v28, v29, v30, v31
+    montmul_x4 v0, v1, v2, v3, v4, v5, v6, v7, \
+        v24, v25, v26, v27, t0, t1, v28, v29, v30, v31
+    addi t4, a0, 0*2;  add  a5, a0, a6; vle16.v v28, (t4); vle16.v v29, (a5)
+    add  t4, t4, t5;   add  a5, a5, t5; vle16.v v30, (t4); vle16.v v31, (a5)
+    # a0b0 + a1 * (b1zeta mod q); then accumulate
+    vadd.vv v20, v20, v0;  vadd.vv v21, v21, v1
+    vadd.vv v22, v22, v2;  vadd.vv v23, v23, v3
+    vadd.vv v20, v20, v28; vadd.vv v21, v21, v29
+    vadd.vv v22, v22, v30; vadd.vv v23, v23, v31
+    addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
+    add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
+    add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
+    bltu a1, t2, poly_basemul_acc_cached_rvv_loop
 ret
 
 .globl poly_reduce_rvv
 .align 2
 poly_reduce_rvv:
-    li t2, 64
-    vsetvli t2, t2, e16, m8, tu, mu
-    li t0, 3329
-    li a6, 20159    # for barrett reduction
-    li a2, 2
-    addi a3, a0, 0
+    li a7, 16*8;    li t0, 3329
+    vsetvli a7, a7, e16, m8, tu, mu
+    li a6, 20159;   add  t4, a0, 256*2  
+    slli t3, a7, 2; slli a7, a7, 1
 poly_reduce_rvv_loop:
-    vle16.v v0,  (a0);       addi a0, a0, 2*8*8
-    vle16.v v8,  (a0);       addi a0, a0, 2*8*8
+    add a1, a0, a7
+    vle16.v v0,  (a0);  vle16.v v8,  (a1)
     barrettRdc v0, v16, a6, t0
     barrettRdc v8, v24, a6, t0
-    vse16.v v0,  (a3);       addi a3, a3, 2*8*8
-    vse16.v v8,  (a3);       addi a3, a3, 2*8*8
-    addi a2, a2, -1
-    bnez a2, poly_reduce_rvv_loop
+    vse16.v v0,  (a0);  vse16.v v8,  (a1)
+    add  a0, a0, t3
+    bltu a0, t4, poly_reduce_rvv_loop
 ret
 
 .globl poly_tomont_rvv
 .align 2
 poly_tomont_rvv:
-    li t2, 64
-    vsetvli t2, t2, e16, m8, tu, mu
-    li t0, 3329
-    li t1, 1353     # mont^2
-    li t2, 20553    # qinv*mont^2
-    li a2, 2
-    addi a3, a0, 0
+    li a7, 16*8;    li t0, 3329
+    vsetvli a7, a7, e16, m8, tu, mu
+    # mont^2 and qinv*mont^2
+    li t1, 1353;    li t2, 20553
+    slli t3, a7, 2; slli a7, a7, 1
+    add  t4, a0, 256*2
 poly_tomont_rvv_loop:
-    vle16.v v0,  (a0);       addi a0, a0, 2*8*8
-    vle16.v v8,  (a0);       addi a0, a0, 2*8*8
-    montMul v0,  v16, t0, t1, t2
-    montMul v8,  v24, t0, t1, t2
-    vse16.v v0,  (a3);       addi a3, a3, 2*8*8
-    vse16.v v8,  (a3);       addi a3, a3, 2*8*8
-    addi a2, a2, -1
-    bnez a2, poly_tomont_rvv_loop
+    add a1, a0, a7
+    vle16.v v0,  (a0);  vle16.v v8,  (a1)
+    montmul_const v16, v0, t1, t2, t0, v24
+    montmul_const v24, v8, t1, t2, t0, v0
+    vse16.v v16, (a0);  vse16.v v24, (a1)
+    add  a0, a0, t3
+    bltu a0, t4, poly_tomont_rvv_loop
+ret
+
+.globl normal2ntt_order_rvv
+.align 2
+normal2ntt_order_rvv:
+    li a2, 2
+normal2ntt_order_rvv_loop:
+    addi a5, a0, 64*2
+    vsetivli a7, 8, e16, m1, tu, mu
+    vl8re16.v v16, (a0);  vl8re16.v v24, (a5)
+    # shuffle4
+    addi t2, a1, _MASK_01230123*2; addi t3, a1, _MASK_45674567*2; li t6, 0x0f
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v24, v17, v25, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v18, v26, v19, v27, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v20, v28, v21, v29, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v22, v30, v23, v31, v8, v9, v10, v11, v1, v2
+    # shuffle2
+    addi t2, a1, _MASK_01014545*2; addi t3, a1, _MASK_23236767*2; li t6, 0x33
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v20, v24, v28, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v17, v21, v25, v29, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v18, v22, v26, v30, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v19, v23, v27, v31, v8, v9, v10, v11, v1, v2
+    # shuffle1
+    addi t2, a1, _MASK_10325476*2; li t6, 0x55
+    vle16.v v1, (t2); vmv.s.x v0, t6
+    addi a5, a0, 4*8*2
+    shuffle_o_x2 v8,  v9,  v10, v11, v16, v18, v20, v22, v1, v1
+    vs4r.v v8,  (a0);    addi a0, a0, 8*8*2
+    shuffle_o_x2 v12, v13, v14, v15, v24, v26, v28, v30, v1, v1
+    vs4r.v v12, (a5);    addi a5, a5, 8*8*2
+    shuffle_o_x2 v8,  v9,  v10, v11, v17, v19, v21, v23, v1, v1
+    vs4r.v v8,  (a0);    addi a0, a0, 8*8*2
+    shuffle_o_x2 v12, v13, v14, v15, v25, v27, v29, v31, v1, v1
+    vs4r.v v12, (a5);    addi a2, a2, -1
+    bnez a2, normal2ntt_order_rvv_loop
+ret
+
+.globl ntt2normal_order_rvv
+.align 2
+ntt2normal_order_rvv:
+    li a2, 2
+ntt2normal_order_rvv_loop:
+    addi a5, a0, 64*2
+    vsetivli a7, 8, e16, m1, tu, mu
+    vl8re16.v v16, (a0)
+    # shuffle1
+    addi t2, a1, _MASK_10325476*2; li t6, 0x55
+    vle16.v v1, (t2);   vmv.s.x v0, t6
+    shuffle_x2 v16, v17, v18, v19, v8, v9, v10, v11, v1, v1
+    vl8re16.v v24, (a5)
+    shuffle_x2 v20, v21, v22, v23, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v24, v25, v26, v27, v8, v9, v10, v11, v1, v1
+    shuffle_x2 v28, v29, v30, v31, v8, v9, v10, v11, v1, v1
+    # shuffle2
+    addi t2, a1, _MASK_01014545*2; addi t3, a1, _MASK_23236767*2; li t6, 0x33
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    shuffle_x2 v16, v18, v20, v22, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v24, v26, v28, v30, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v17, v19, v21, v23, v8, v9, v10, v11, v1, v2
+    shuffle_x2 v25, v27, v29, v31, v8, v9, v10, v11, v1, v2
+    # shuffle4
+    addi t2, a1, _MASK_01230123*2; addi t3, a1, _MASK_45674567*2; li t6, 0x0f
+    vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    addi a5, a0, 8*8*2
+    shuffle_o_x2 v8,  v12, v9,  v13, v16, v20, v24, v28, v1, v2
+    shuffle_o_x2 v10, v14, v11, v15, v17, v21, v25, v29, v1, v2
+    vs4r.v v8, (a0);    vs4r.v v12, (a5)
+    addi a0, a0, 4*8*2; addi a5, a5, 4*8*2
+    shuffle_o_x2 v8,  v12, v9,  v13, v18, v22, v26, v30, v1, v2
+    shuffle_o_x2 v10, v14, v11, v15, v19, v23, v27, v31, v1, v2
+    vs4r.v v8, (a0);    vs4r.v v12, (a5)
+    addi a2, a2, -1;    addi a0, a5, 4*8*2
+    bnez a2, ntt2normal_order_rvv_loop
 ret

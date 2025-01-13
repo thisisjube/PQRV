@@ -33,7 +33,7 @@ static void pack_pk(uint8_t r[KYBER_INDCPA_PUBLICKEYBYTES], polyvec *pk,
     size_t i;
 #if defined(VECTOR128)
     for (i = 0; i < KYBER_K; i++)
-        ntt2normal_order(pk->vec[i].coeffs, pk->vec[i].coeffs, qdata);
+        ntt2normal_order_rvv(pk->vec[i].coeffs, qdata);
 #endif
     polyvec_tobytes(r, pk);
     for (i = 0; i < KYBER_SYMBYTES; i++)
@@ -76,7 +76,7 @@ static void pack_sk(uint8_t r[KYBER_INDCPA_SECRETKEYBYTES], polyvec *sk)
 #if defined(VECTOR128)
     size_t i;
     for (i = 0; i < KYBER_K; i++)
-        ntt2normal_order(sk->vec[i].coeffs, sk->vec[i].coeffs, qdata);
+        ntt2normal_order_rvv(sk->vec[i].coeffs, qdata);
 #endif
     polyvec_tobytes(r, sk);
 }
@@ -288,8 +288,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES],
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order(a[i].vec[j].coeffs, a[i].vec[j].coeffs,
-                             qdata);
+            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
 }
 #else
 void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES],

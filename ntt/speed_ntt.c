@@ -139,8 +139,8 @@ int main()
          poly_basemul_acc_cached_rvv);
     PERF(poly_reduce_rvv(r), poly_reduce_rvv);
     PERF(poly_tomont_rvv(r), poly_tomont_rvv);
-    PERF(ntt2normal_order(r, a, qdata), ntt2normal_order);
-    PERF(normal2ntt_order(r, a, qdata), normal2ntt_order);
+    PERF(ntt2normal_order_rvv(r, qdata), ntt2normal_order_rvv);
+    PERF(normal2ntt_order_rvv(r, qdata), normal2ntt_order_rvv);
 #elif defined(DILITHIUM_NTT_RVV_H)
     int32_t r[256], a[256], b[256];
     int64_t c_double[256];

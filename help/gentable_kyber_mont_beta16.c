@@ -92,61 +92,111 @@ void GenTables_7layer(void)
     int32_t table_zeta[128], table_zetaqinv[128];
     size_t index;
     for (int j = 0, index = 0; j < 127; j++, index++) {
-        t = Pow(root, treeNTTMerged_7layer[j]);
+        t = Pow(root, treeNTT_7layer[j]);
         t = FqMul(t, ((int32_t)MONT * MONT) % Q);
         t0 = (t * QINV) & 0xffff;
         table_zeta[index] = t;
         table_zetaqinv[index] = t0;
     }
 
-    for (index = 0; index < 127; index++)
-        printf("%d, ", table_zeta[index]);
-    printf("\n\n");
-    for (index = 0; index < 127; index++)
-        printf("%d, ", table_zetaqinv[index]);
-    printf("\n\n");
-
+    /**
+     * index:                  P0 | P1
+     * l0: 0
+     * l1: 1,2          1         | 2
+     * l2: 3,4,5,6      3,4       | 5,6
+     * l3: 7,...,14     7,...,10  | 11,...,14
+     * l4: 15,...,30    15,...,22 | 23,...,30
+     * l5: 31,...,62    31,...,46 | 47,...,62
+     * l6: 63,...,126   63,...,94 | 95,...,126
+     */
+    printf("NTT & RVV & VLEN=128\n");
+    printf("\n#define _ZETAS_EXP\n");
     printf("%d, ", table_zetaqinv[0]);
     printf("%d, ", table_zeta[0]);
-    for (index = 1; index < 127; index++) {
-        if ((index >= 16 && index < 32) ||
-            (index >= 16 + 63 && index < 32 + 63)) {
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zetaqinv[index]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zetaqinv[index + 1]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zeta[index]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zeta[index + 1]);
-            index += 2 - 1;
-        } else if ((index >= 32 && index < 64) ||
-                   (index >= 32 + 63 && index < 64 + 63)) {
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 1]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 2]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 3]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 1]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 2]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 3]);
-            index += 4 - 1;
-        } else {
-            printf("%d, ", table_zetaqinv[index]);
-            printf("%d, ", table_zeta[index]);
-        }
+    // PART 0
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L1\n");
+    printf("%d, ", table_zetaqinv[1]);
+    printf("%d, ", table_zeta[1]);
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L2\n");
+    for (index = 3; index <= 4; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+        printf("%d, ", table_zeta[index]);
     }
-    printf("\n");
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L3\n");
+    for (index = 7; index <= 10; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 7; index <= 10; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L4\n");
+    for (index = 15; index <= 22; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 15; index <= 22; index++) {
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L5\n");
+    index = 31;
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zetaqinv[index + k * 2]);
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zeta[index + k * 2]);
+    index = 32;
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zetaqinv[index + k * 2]);
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zeta[index + k * 2]);
+    printf("\n#define _ZETAS_EXP_1TO6_P0_L6\n");
+    for (index = 63; index <= 66; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 4]);
+    }
+    // PART 1
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L1\n");
+    printf("%d, ", table_zetaqinv[2]);
+    printf("%d, ", table_zeta[2]);
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L2\n");
+    for (index = 5; index <= 6; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L3\n");
+    for (index = 11; index <= 14; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 11; index <= 14; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L4\n");
+    for (index = 23; index <= 30; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 23; index <= 30; index++) {
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L5\n");
+    index = 47;
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zetaqinv[index + k * 2]);
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zeta[index + k * 2]);
+    index = 48;
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zetaqinv[index + k * 2]);
+    for (int k = 0; k <= 7; k++)
+        printf("%d, ", table_zeta[index + k * 2]);
+    printf("\n#define _ZETAS_EXP_1TO6_P1_L6\n");
+    for (index = 95; index <= 98; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 4]);
+    }
 
-    printf("\nFor point-wise multiplication\n");
+    printf("\n\nPoint-wise multiplication\n");
     for (int j = 0, index = 0; j < 128; j++, index++) {
         t = Pow(root, treeMulTable_7layer[j]);
         t = FqMul(t, ((int32_t)MONT * MONT) % Q);
@@ -154,14 +204,16 @@ void GenTables_7layer(void)
         table_zeta[index] = t;
         table_zetaqinv[index] = t0;
     }
-    for (index = 0; index < 128; index++)
-        printf("%d, ", table_zetaqinv[index]);
-    printf("\n\n");
-    for (index = 0; index < 128; index++)
-        printf("%d, ", table_zeta[index]);
+    for (int i = 0; i <= 7; i++)
+        for (int k = 0; k <= 7; k++)
+            printf("%d, ", table_zeta[i + k * 8]);
+    printf("\n");
+    for (int i = 64; i <= 64 + 7; i++)
+        for (int k = 0; k <= 7; k++)
+            printf("%d, ", table_zeta[i + k * 8]);
     printf("\n\n");
 
-    printf("For INTT\n");
+    printf("INTT & RVV & VLEN=128\n");
     for (int j = 0, index = 0; j < 127; j++, index++) {
         t = Pow(root, 256 - treeINTTMerged_7layer[j]);
         t = FqMul(t, ((int32_t)MONT * MONT) % Q);
@@ -169,83 +221,108 @@ void GenTables_7layer(void)
         table_zeta[index] = t;
         table_zetaqinv[index] = t0;
     }
-
-    for (index = 0; index < 127; index++)
-        printf("%d, ", table_zeta[index]);
-    printf("\n\n");
-    for (index = 0; index < 127; index++)
+    /**
+     * index:     P0 | P1
+     * l0: 0, ...,31 | 63,...,94
+     * l1: 32,...,47 | 95,...,110
+     * l2: 48,...,55 | 111,..,118
+     * l3: 56,...,59 | 119,..,122
+     * l4: 60,61     | 123,124
+     * l5: 62        | 125
+     * l6: 126
+     */
+    // PART 0
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L0\n");
+    for (index = 0; index <= 3; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 4]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L1\n");
+    for (index = 32; index <= 33; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zetaqinv[index + j * 2]);
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 2]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L2\n");
+    for (index = 48; index <= 55; index++) {
         printf("%d, ", table_zetaqinv[index]);
-    printf("\n\n");
-
-    // 0~32重复2次，32～48 4次，其余的无需重复
-    // 32+16+8+4+2+1=63
-    for (index = 0; index < 127; index++) {
-        if ((index >= 0 && index < 32) ||
-            (index >= 0 + 63 && index < 32 + 63)) {
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 1]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 2]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zetaqinv[index + 3]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 1]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 2]);
-            for (int k = 0; k < 2; k++)
-                printf("%d, ", table_zeta[index + 3]);
-            index += 4 - 1;
-        } else if ((index >= 32 && index < 48) ||
-                   (index >= 32 + 63 && index < 48 + 63)) {
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zetaqinv[index]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zetaqinv[index + 1]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zeta[index]);
-            for (int k = 0; k < 4; k++)
-                printf("%d, ", table_zeta[index + 1]);
-            index += 2 - 1;
-        } else {
+    }
+    for (index = 48; index <= 55; index++) {
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L3\n");
+    for (index = 56; index <= 59; index++) {
+        for (int k = 0; k < 2; k++)
             printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 56; index <= 59; index++) {
+        for (int k = 0; k < 2; k++)
             printf("%d, ", table_zeta[index]);
-        }
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L4\n");
+    for (index = 60; index <= 61; index++) {
+        for (int k = 0; k < 4; k++)
+            printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 60; index <= 61; index++) {
+        for (int k = 0; k < 4; k++)
+            printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P0_L5\n");
+    for (index = 62; index <= 62; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+        printf("%d, ", table_zeta[index]);
+    }
+    // PART 1
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L0\n");
+    for (index = 63; index <= 66; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 4]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L1\n");
+    for (index = 95; index <= 96; index++) {
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zetaqinv[index + j * 2]);
+        for (int j = 0; j <= 7; j++)
+            printf("%d, ", table_zeta[index + j * 2]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L2\n");
+    for (index = 111; index <= 118; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 111; index <= 118; index++) {
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L3\n");
+    for (index = 119; index <= 122; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 119; index <= 122; index++) {
+        for (int k = 0; k < 2; k++)
+            printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L4\n");
+    for (index = 123; index <= 124; index++) {
+        for (int k = 0; k < 4; k++)
+            printf("%d, ", table_zetaqinv[index]);
+    }
+    for (index = 123; index <= 124; index++) {
+        for (int k = 0; k < 4; k++)
+            printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_0TO5_P1_L5\n");
+    for (index = 125; index <= 125; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+        printf("%d, ", table_zeta[index]);
+    }
+    printf("\n#define _ZETA_EXP_INTT_L6\n");
+    for (index = 126; index <= 126; index++) {
+        printf("%d, ", table_zetaqinv[index]);
+        printf("%d, ", table_zeta[index]);
     }
     printf("\n");
-
-    // for (int j = 0; j < 127; j++) {
-    //     // root is 256th, -i in intt
-    //     t = Pow(root, 256 - treeINTT_7layer[j]);
-    //     t = FqMul(t, ((int64_t)MONT * MONT) % Q);
-    //     printf("%d, ", t);
-    // }
-    // printf("\n\n");
-
-    // for (int j = 0; j < 128; j++) {
-    //     t = Pow(root, treeMulTable_7layer[j]);
-    //     t = FqMul(t, ((int64_t)MONT * MONT) % Q);
-    //     printf("%d, ", t);
-    // }
-    // printf("\n\n");
-
-    // for (int j = 0; j < 127; j++) {
-    //     t = Pow(root, treeNTTMerged_7layer[j]);
-    //     t = FqMul(t, ((int64_t)MONT * MONT) % Q);
-    //     printf("%d, ", t);
-    // }
-    // printf("\n\n");
-
-    // for (int j = 0; j < 127; j++) {
-    //     // root is 256th, -i in intt
-    //     t = Pow(root, 256 - treeINTTMerged_7layer[j]);
-    //     t = FqMul(t, ((int64_t)MONT * MONT) % Q);
-    //     printf("%d, ", t);
-    // }
-    // printf("\n\n");
 }
 
 int main(void)

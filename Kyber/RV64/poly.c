@@ -150,7 +150,7 @@ void poly_frombytes(poly *r, const uint8_t a[KYBER_POLYBYTES])
             ((a[3 * i + 1] >> 4) | ((uint16_t)a[3 * i + 2] << 4)) & 0xFFF;
     }
 #if defined(VECTOR128)
-    normal2ntt_order(r->coeffs, r->coeffs, qdata);
+    normal2ntt_order_rvv(r->coeffs, qdata);
 #endif
 }
 

@@ -701,6 +701,53 @@ cpi_vsllvi_x4:
 .endr
 ret
 
+.globl cpi_vssrlvi
+.align 2
+cpi_vssrlvi:
+    # vxrm[1:0]=0b00 for round-to-nearest-up; =0b10 for round-down
+    csrwi vxrm, 0
+.rep 200
+    vssrl.vi v0, v0, 10
+    vssrl.vi v1, v1, 10
+    vssrl.vi v2, v2, 10
+    vssrl.vi v3, v3, 10
+    vssrl.vi v4, v4, 10
+    vssrl.vi v5, v5, 10
+    vssrl.vi v6, v6, 10
+    vssrl.vi v7, v7, 10
+    vssrl.vi v8, v8, 10
+    vssrl.vi v9, v9, 10
+.endr
+ret
+
+.globl cpi_vssrlvi_x1
+.align 2
+cpi_vssrlvi_x1:
+.rep 2000
+    vssrl.vi v0, v0, 10
+.endr
+ret
+
+.globl cpi_vssrlvi_x2
+.align 2
+cpi_vssrlvi_x2:
+.rep 1000
+    vssrl.vi v0, v0, 10
+    vssrl.vi v1, v1, 10
+.endr
+ret
+
+.globl cpi_vssrlvi_x4
+.align 2
+cpi_vssrlvi_x4:
+.rep 500
+    vssrl.vi v0, v0, 10
+    vssrl.vi v1, v1, 10
+    vssrl.vi v2, v2, 10
+    vssrl.vi v3, v3, 10
+.endr
+ret
+
 .globl cpi_vsrlvx
 .align 2
 cpi_vsrlvx:

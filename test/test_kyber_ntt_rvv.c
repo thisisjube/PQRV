@@ -121,7 +121,7 @@ void print_poly(int16_t *a, size_t n)
     for (i = 0; i < n; i++) {
         if (i != 0 && i % 16 == 0)
             printf("\n");
-        printf("%d, ", a[i]);
+        printf("%3d, ", a[i]);
     }
     printf("\n\n");
 }
@@ -145,19 +145,180 @@ uint64_t t[NTESTS];
 
 int main()
 {
-    int16_t a[KYBER_N], b[KYBER_N], c0[KYBER_N], c1[KYBER_N], i, j;
+    int16_t a[KYBER_N], b[KYBER_N], b_cache[KYBER_N / 2], c0[KYBER_N],
+        c1[KYBER_N], i, j;
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = b[i] = i;
+    normal2ntt_order_rvv(b, qdata);
+    ntt2normal_order_rvv(b, qdata);
+    if (poly_equal(a, b, KYBER_N) != 1) {
+        printf("normal2ntt_order ntt2normal_order\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 2;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 2;
+    ntt_ref(a);
+    ntt_rvv(b, qdata);
+    ntt2normal_order_rvv(b, qdata);
+    if (poly_equal(a, b, KYBER_N) != 1) {
+        printf("ntt ntt2normal_order\n");
+        print_poly(a, KYBER_N);
+        print_poly(b, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 2;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 2;
+    ntt_ref(a);
+    intt_ref(a);
+    ntt_rvv(b, qdata);
+    intt_rvv(b, qdata);
+    if (poly_equal(a, b, KYBER_N) != 1) {
+        printf("ntt intt\n");
+        print_poly(a, KYBER_N);
+        print_poly(b, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 2;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 2;
+    ntt_ref(a);
+    ntt_rvv(b, qdata);
+    poly_basemul_ref(c0, a, a);
+    poly_basemul_rvv(c1, b, b, qdata);
+    intt_ref(c0);
+    intt_rvv(c1, qdata);
+    if (poly_equal(c0, c1, KYBER_N) != 1) {
+        printf("ntt poly_basemul intt\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
 
     for (i = 0; i < KYBER_N; i++)
         a[i] = 1;
     for (i = 0; i < KYBER_N; i++)
         b[i] = 1;
     ntt_ref(a);
+    poly_basemul_ref(c0, a, a);
+    for (i = 0; i < KYBER_N; i++)
+        c0[i] += c0[i];
+    intt_ref(c0);
     ntt_rvv(b, qdata);
-    ntt2normal_order(b, b, qdata);
+    poly_basemul_rvv(c1, b, b, qdata);
+    poly_basemul_acc_rvv(c1, b, b, qdata);
+    intt_rvv(c1, qdata);
+    if (poly_equal(c0, c1, KYBER_N) != 1) {
+        printf("ntt poly_basemul poly_basemul_acc intt\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 1;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 1;
+    ntt_ref(a);
+    poly_basemul_ref(c0, a, a);
+    for (i = 0; i < KYBER_N; i++)
+        c0[i] += c0[i];
+    intt_ref(c0);
+    ntt_rvv(b, qdata);
+    poly_basemul_cache_init_rvv(c1, b, b, qdata, b_cache);
+    poly_basemul_acc_cached_rvv(c1, b, b, qdata, b_cache);
+    intt_rvv(c1, qdata);
+    if (poly_equal(c0, c1, KYBER_N) != 1) {
+        printf("ntt poly_basemul_cache poly_basemul_acc_cached intt\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 1;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 1;
+    ntt_ref(a);
+    poly_basemul_ref(c0, a, a);
+    for (i = 0; i < KYBER_N; i++)
+        c0[i] += 3 * c0[i];
+    intt_ref(c0);
+    ntt_rvv(b, qdata);
+    poly_basemul_cache_init_rvv(c1, b, b, qdata, b_cache);
+    poly_basemul_acc_cached_rvv(c1, b, b, qdata, b_cache);
+    poly_basemul_acc_cache_init_rvv(c1, b, b, qdata, b_cache);
+    poly_basemul_acc_cached_rvv(c1, b, b, qdata, b_cache);
+    intt_rvv(c1, qdata);
+    if (poly_equal(c0, c1, KYBER_N) != 1) {
+        printf(
+            "ntt poly_basemul_cache_init poly_basemul_acc_cached "
+            "poly_basemul_acc_cache_init poly_basemul_acc_cached intt\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 1;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 1;
+    ntt_ref(a);
+    poly_basemul_ref(c0, a, a);
+    intt_ref(c0);
+    ntt_rvv(b, qdata);
+    poly_basemul_cache_init_rvv(c1, b, b, qdata, b_cache);
+    poly_basemul_cached_rvv(c1, b, b, qdata, b_cache);
+    intt_rvv(c1, qdata);
+    if (poly_equal(c0, c1, KYBER_N) != 1) {
+        printf("ntt cache_init acc_cached intt\n");
+        print_poly(c0, KYBER_N);
+        print_poly(c1, KYBER_N);
+    }
+
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 3329 * 9;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 3329 * 9;
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = barrett_reduce_ref(a[i]);
+    poly_reduce_rvv(b);
     if (poly_equal(a, b, KYBER_N) != 1) {
+        printf("poly_reduce\n");
         print_poly(a, KYBER_N);
         print_poly(b, KYBER_N);
     }
 
+    for (i = 0; i < KYBER_N; i++)
+        a[i] = 3329 * 9;
+    for (i = 0; i < KYBER_N; i++)
+        b[i] = 3329 * 9;
+    poly_tomont_ref(a);
+    poly_tomont_rvv(b);
+    if (poly_equal(a, b, KYBER_N) != 1) {
+        printf("poly_tomont\n");
+        print_poly(a, KYBER_N);
+        print_poly(b, KYBER_N);
+    }
+
+    PERF(ntt_rvv(a, qdata), ntt);
+    PERF(intt_rvv(a, qdata), intt);
+    PERF(poly_basemul_rvv(c1, a, b, qdata), poly_basemul);
+    PERF(poly_basemul_acc_rvv(c1, a, b, qdata), poly_basemul_acc);
+    PERF(poly_basemul_cache_init_rvv(c1, a, b, qdata, b_cache),
+         poly_basemul_cache_init);
+    PERF(poly_basemul_acc_cache_init_rvv(c1, a, b, qdata, b_cache),
+         poly_basemul_acc_cache_init);
+    PERF(poly_basemul_cached_rvv(c1, a, b, qdata, b_cache),
+         poly_basemul_cached);
+    PERF(poly_basemul_acc_cached_rvv(c1, a, b, qdata, b_cache),
+         poly_basemul_acc_cached);
+    PERF(poly_reduce_rvv(a), poly_reduce);
+    PERF(poly_tomont_rvv(a), poly_tomont);
+    PERF(ntt2normal_order_rvv(a, qdata), ntt2normal_order);
+    PERF(normal2ntt_order_rvv(a, qdata), normal2ntt_order);
     return 0;
 }

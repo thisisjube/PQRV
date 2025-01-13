@@ -75,18 +75,18 @@ intt                           cycles/insts/CPI=7192/8672/0.83
 
 speed_dualissue_kyber_mont_ntt_rvv:
 Kyber 7-layer NTT & Montgomery based & 1+6 layers merging & RV32IMV
-ntt                            cycles/insts/CPI=1575/1179/1.34
-intt                           cycles/insts/CPI=1839/1591/1.16
-poly_basemul_rvv               cycles/insts/CPI=710/704/1.01
-poly_basemul_acc_rvv           cycles/insts/CPI=822/800/1.03
-poly_basemul_cache_init_rvv    cycles/insts/CPI=750/737/1.02
-poly_basemul_acc_cache_init_rvv cycles/insts/CPI=862/833/1.03
-poly_basemul_cached_rvv        cycles/insts/CPI=629/607/1.04
-poly_basemul_acc_cached_rvv    cycles/insts/CPI=741/703/1.05
-poly_reduce_rvv                cycles/insts/CPI=252/49/5.14
-poly_tomont_rvv                cycles/insts/CPI=251/50/5.02
-ntt2normal_order               cycles/insts/CPI=769/373/2.06
-normal2ntt_order               cycles/insts/CPI=753/365/2.06
+ntt                            cycles/insts/CPI=1578/754/2.09
+intt                           cycles/insts/CPI=1836/967/1.90
+poly_basemul_rvv               cycles/insts/CPI=710/693/1.02
+poly_basemul_acc_rvv           cycles/insts/CPI=804/789/1.02
+poly_basemul_cache_init_rvv    cycles/insts/CPI=738/730/1.01
+poly_basemul_acc_cache_init_rvv cycles/insts/CPI=834/826/1.01
+poly_basemul_cached_rvv        cycles/insts/CPI=607/612/0.99
+poly_basemul_acc_cached_rvv    cycles/insts/CPI=703/712/0.99
+poly_reduce_rvv                cycles/insts/CPI=252/44/5.73
+poly_tomont_rvv                cycles/insts/CPI=251/45/5.58
+ntt2normal_order_rvv           cycles/insts/CPI=714/259/2.76
+normal2ntt_order_rvv           cycles/insts/CPI=702/259/2.71
 
 speed_singleissue_dilithium_mont_ntt_rv32:
 Dilithium 8-layer NTT & Montgomery based & 3+3+2 layers merging & RV32IM
@@ -109,7 +109,7 @@ ntt                            cycles/insts/CPI=7054/8692/0.81
 poly_basemul_init              cycles/insts/CPI=1035/1706/0.61
 poly_basemul_acc               cycles/insts/CPI=1933/3242/0.60
 poly_basemul_acc_end           cycles/insts/CPI=3115/4015/0.78
-poly_basemul                   cycles/insts/CPI=2027/2349/0.86
+poly_basemul                   cycles/insts/CPI=2026/2349/0.86
 poly_reduce                    cycles/insts/CPI=1226/1673/0.73
 intt                           cycles/insts/CPI=7561/9206/0.82
 Dilithium 6-layer NTT & Montgomery based & 3+3 layers merging

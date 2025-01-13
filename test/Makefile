@@ -26,7 +26,7 @@ TARGET_IP = 192.168.123.99
 .PHONY: all clean
 
 all: \
-	out/test_add
+	out/test_kyber_ntt_rvv
 
 # out/test_add
 # out/test_dilithium_mont_rv32imv
