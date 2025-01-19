@@ -26,7 +26,7 @@ TARGET_IP = 192.168.123.99
 .PHONY: all clean
 
 all: \
-	out/test_kyber_ntt_rvv
+	out/test_kyber_ntt_rvv out/test_sampling_vlen128
 
 # out/test_add
 # out/test_dilithium_mont_rv32imv
@@ -38,6 +38,11 @@ all: \
 # out/test_plantard_rv64
 # out/test_plantard
 # out/test_mul
+
+out/test_sampling_vlen128: $(SOURCES) $(HEADERS) test_sampling_vlen128.c $(KYBERNTTDIR)/ntt_rvv.S $(KYBERNTTDIR)/consts.c $(KYBERNTTDIR)/consts.h
+	mkdir -p out
+	$(CC) $(CFLAGS) $(filter %.c, $^) $(filter %.S, $^) -o $@
+	scp $@ root@$(TARGET_IP):/sharefs/
 
 out/test_add: $(SOURCES) $(HEADERS) add.c
 	mkdir -p out

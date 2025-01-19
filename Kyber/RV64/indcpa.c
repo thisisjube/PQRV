@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#if defined(VECTOR128)
-#    include <riscv_vector.h>
-#endif
-
 #include "ntt.h"
 #include "ntt_rvv.h"
 #include "params.h"
@@ -182,56 +178,7 @@ static unsigned int rej_uniform_vector(int16_t *r, const uint8_t *buf)
 {
     unsigned int ctr, pos;
     uint16_t val0, val1;
-    unsigned long num0, num1;
-    size_t vl;
-    vuint8m1_t f0, f1, idx8;
-    vuint16m1_t g0, g1, t0;
-    vbool16_t mask_01, good0, good1;
-
-    const uint16_t mask_12bits = 0xFFF;
-    const uint16_t bound = KYBER_Q;
-    const uint8_t idx8_t[16] __attribute__((aligned(16))) = {
-        0, 1, 1, 2, 3, 4, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11};
-    const uint16_t mask_01_t[8] = {0, 1, 0, 1, 0, 1, 0, 1};
-
-    // init useful vector variables
-    vl = vsetvl_e8m1(128 / 8);
-    idx8 = vle8_v_u8m1(idx8_t, vl);
-    vl = vsetvl_e16m1(128 / 16);
-    t0 = vle16_v_u16m1(mask_01_t, vl);
-    mask_01 = vmseq_vx_u16m1_b16(t0, 1, vl);
-
-    ctr = pos = 0;
-    while (ctr <= KYBER_N - 16 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 24) {
-        vl = vsetvl_e8m1(128 / 8);
-        f0 = vle8_v_u8m1(&buf[pos], vl);
-        f1 = vle8_v_u8m1(&buf[pos + 12], vl);
-        pos += 24;
-        f0 = vrgather_vv_u8m1(f0, idx8, vl);
-        f1 = vrgather_vv_u8m1(f1, idx8, vl);
-
-        vl = vsetvl_e16m1(128 / 16);
-        g0 = vreinterpret_v_u8m1_u16m1(f0);
-        g1 = vreinterpret_v_u8m1_u16m1(f1);
-        g0 = vsrl_vx_u16m1_m(mask_01, g0, g0, 4, vl);
-        g1 = vsrl_vx_u16m1_m(mask_01, g1, g1, 4, vl);
-
-        g0 = vand_vx_u16m1(g0, mask_12bits, vl);
-        g1 = vand_vx_u16m1(g1, mask_12bits, vl);
-
-        good0 = vmsltu_vx_u16m1_b16(g0, bound, vl);
-        good1 = vmsltu_vx_u16m1_b16(g1, bound, vl);
-        num0 = vcpop_m_b16(good0, vl);
-        num1 = vcpop_m_b16(good1, vl);
-
-        g0 = vcompress_vm_u16m1(good0, g0, g0, vl);
-        g1 = vcompress_vm_u16m1(good1, g1, g1, vl);
-
-        vse16_v_u16m1((uint16_t *)&r[ctr], g0, vl);
-        ctr += num0;
-        vse16_v_u16m1((uint16_t *)&r[ctr], g1, vl);
-        ctr += num1;
-    }
+    rej_uniform_rvv(r, buf, qdata, &ctr, &pos);
     while (ctr < KYBER_N && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 3) {
         val0 =
             ((buf[pos + 0] >> 0) | ((uint16_t)buf[pos + 1] << 8)) & 0xFFF;
@@ -266,7 +213,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES],
                 int transposed)
 {
     unsigned int ctr, i, j;
-    uint8_t buf[GEN_MATRIX_NBLOCKS * XOF_BLOCKBYTES + 2];
+    uint8_t buf[GEN_MATRIX_NBLOCKS * XOF_BLOCKBYTES + 8];
     xof_state state;
 
     for (i = 0; i < KYBER_K; i++) {

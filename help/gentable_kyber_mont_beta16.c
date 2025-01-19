@@ -85,7 +85,7 @@ int16_t Pow(int16_t root, int32_t n)
     return t;
 }
 
-void GenTables_7layer(void)
+void GenTables_7layer_VLEN128(void)
 {
     int32_t t;
     int16_t t0;
@@ -327,6 +327,6 @@ void GenTables_7layer(void)
 
 int main(void)
 {
-    GenTables_7layer();
+    GenTables_7layer_VLEN128();
     return 0;
 }

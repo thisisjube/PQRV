@@ -337,6 +337,199 @@
     vs8r.v v8, (a5)
 .endm
 
+.macro rej_core vr0, vf0, vt0, vidx, x0xfff, xq
+    vsetivli a7, 16, e8, m1, tu, mu
+    vle8.v  \vf0, (a1); addi a1, a1, 12
+    vrgather.vv \vt0, \vf0, \vidx
+    vsetivli a7, 8, e16, m1, tu, mu
+    vsrl.vi   \vt0, \vt0, 4, v0.t
+    vand.vx   \vt0, \vt0, \x0xfff
+    vmsltu.vx \vf0, \vt0, \xq
+    vcpop.m   t2, \vf0
+    vcompress.vm \vr0, \vt0, \vf0
+    vse16.v \vr0, (a0); add t2, t2, t2; add a0, a0, t2
+.endm
+
+.macro rej_core_x2 vr0, vr1, vf0, vf1, vt0, vt1, vidx, x0xfff, xq
+    addi t2, a1, 12
+    vsetivli a7, 16, e8, m1, tu, mu
+    vle8.v \vf0, (a1); vle8.v \vf1, (t2); addi a1, a1, 12*2
+    vrgather.vv \vt0, \vf0, \vidx;  vrgather.vv \vt1, \vf1, \vidx
+    vsetivli a7, 8, e16, m1, tu, mu
+    vsrl.vi   \vt0, \vt0, 4, v0.t;  vsrl.vi   \vt1, \vt1, 4, v0.t
+    vand.vx   \vt0, \vt0, \x0xfff;  vand.vx   \vt1, \vt1, \x0xfff
+    vmsltu.vx \vf0, \vt0, \xq;      vmsltu.vx \vf1, \vt1, \xq
+    vcpop.m   t2, \vf0;             vcpop.m   t3, \vf1
+    vcompress.vm \vr0, \vt0, \vf0;  vcompress.vm \vr1, \vt1, \vf1
+    vse16.v \vr0, (a0)
+    add t2, t2, t2; add t3, t3, t3; 
+    add a0, a0, t2; vse16.v \vr1, (a0)
+    add a0, a0, t3
+.endm
+
+.macro rej_core_x4 vr0, vr1, vr2, vr3, vf0, vf1, vf2, vf3, \
+        vt0, vt1, vt2, vt3, vidx, x0xfff, xq
+    addi t2, a1, 12; addi t3, a1, 24; addi t4, a1, 36
+    vsetivli a7, 16, e8, m1, tu, mu
+    vle8.v \vf0, (a1); vle8.v \vf1, (t2)
+    vle8.v \vf2, (t3); vle8.v \vf3, (t4); addi a1, a1, 12*4
+    vrgather.vv \vt0, \vf0, \vidx;  vrgather.vv \vt1, \vf1, \vidx
+    vrgather.vv \vt2, \vf2, \vidx;  vrgather.vv \vt3, \vf3, \vidx
+    vsetivli a7, 8, e16, m1, tu, mu
+    vsrl.vi   \vt0, \vt0, 4, v0.t;  vsrl.vi   \vt1, \vt1, 4, v0.t
+    vsrl.vi   \vt2, \vt2, 4, v0.t;  vsrl.vi   \vt3, \vt3, 4, v0.t
+    vand.vx   \vt0, \vt0, \x0xfff;  vand.vx   \vt1, \vt1, \x0xfff
+    vand.vx   \vt2, \vt2, \x0xfff;  vand.vx   \vt3, \vt3, \x0xfff
+    vmsltu.vx \vf0, \vt0, \xq;      vmsltu.vx \vf1, \vt1, \xq
+    vmsltu.vx \vf2, \vt2, \xq;      vmsltu.vx \vf3, \vt3, \xq
+    vcpop.m   t2, \vf0;             vcpop.m   t3, \vf1
+    vcpop.m   t4, \vf2;             vcpop.m   t5, \vf3
+    vcompress.vm \vr0, \vt0, \vf0;  vcompress.vm \vr1, \vt1, \vf1
+    vcompress.vm \vr2, \vt2, \vf2;  vcompress.vm \vr3, \vt3, \vf3
+    vse16.v \vr0, (a0)
+    add t2, t2, t2; add t3, t3, t3
+    add a0, a0, t2; add t4, t4, t4
+    vse16.v \vr1, (a0); add a0, a0, t3
+    vse16.v \vr2, (a0); add a0, a0, t4; add t5, t5, t5
+    vse16.v \vr3, (a0); add a0, a0, t5
+.endm
+
+.macro cbd2_core_x4 vf0_0, vf0_1, vf1_0, vf1_1, vf2_0, vf2_1, vf3_0, vf3_1, \
+        vt0_0, vt0_1, vt0_2, vt0_3, vt1_0, vt1_1, vt1_2, vt1_3, \
+        vt2_0, vt2_1, vt2_2, vt2_3, vt3_0, vt3_1, vt3_2, vt3_3, \
+        vidx_low, vidx_high, x0x55, x0x33
+    vsetivli a7, 16, e8, m1, tu, mu
+    addi t2, a1, 16;    addi t3, a1, 16*2;  addi t4, a1, 16*3
+    vle8.v \vf0_0, (a1);    vle8.v \vf1_0, (t2)
+    vle8.v \vf2_0, (t3);    vle8.v \vf3_0, (t4)
+    addi a1, a1, 16*4
+    vsrl.vi \vf0_1, \vf0_0, 1;      vsrl.vi \vf1_1, \vf1_0, 1
+    vsrl.vi \vf2_1, \vf2_0, 1;      vsrl.vi \vf3_1, \vf3_0, 1
+    vand.vx \vf0_0, \vf0_0, \x0x55; vand.vx \vf0_1, \vf0_1, \x0x55
+    vand.vx \vf1_0, \vf1_0, \x0x55; vand.vx \vf1_1, \vf1_1, \x0x55
+    vand.vx \vf2_0, \vf2_0, \x0x55; vand.vx \vf2_1, \vf2_1, \x0x55
+    vand.vx \vf3_0, \vf3_0, \x0x55; vand.vx \vf3_1, \vf3_1, \x0x55
+    vadd.vv \vf0_0, \vf0_0, \vf0_1; vadd.vv \vf1_0, \vf1_0, \vf1_1
+    vadd.vv \vf2_0, \vf2_0, \vf2_1; vadd.vv \vf3_0, \vf3_0, \vf3_1
+    vsrl.vi \vf0_1, \vf0_0, 2;      vsrl.vi \vf1_1, \vf1_0, 2
+    vsrl.vi \vf2_1, \vf2_0, 2;      vsrl.vi \vf3_1, \vf3_0, 2
+    vand.vx \vf0_0, \vf0_0, \x0x33; vand.vx \vf1_0, \vf1_0, \x0x33
+    vand.vx \vf2_0, \vf2_0, \x0x33; vand.vx \vf3_0, \vf3_0, \x0x33
+    vand.vx \vf0_1, \vf0_1, \x0x33; vand.vx \vf1_1, \vf1_1, \x0x33
+    vand.vx \vf2_1, \vf2_1, \x0x33; vand.vx \vf3_1, \vf3_1, \x0x33
+    vadd.vx \vf0_0, \vf0_0, \x0x33; vadd.vx \vf1_0, \vf1_0, \x0x33
+    vadd.vx \vf2_0, \vf2_0, \x0x33; vadd.vx \vf3_0, \vf3_0, \x0x33
+    vsub.vv \vf0_0, \vf0_0, \vf0_1; vsub.vv \vf1_0, \vf1_0, \vf1_1
+    vsub.vv \vf2_0, \vf2_0, \vf2_1; vsub.vv \vf3_0, \vf3_0, \vf3_1
+    vsrl.vi \vf0_1, \vf0_0, 4;      vsrl.vi \vf1_1, \vf1_0, 4;      
+    vsrl.vi \vf2_1, \vf2_0, 4;      vsrl.vi \vf3_1, \vf3_0, 4;      
+    vand.vi \vf0_0, \vf0_0, 0xf;    vand.vi \vf1_0, \vf1_0, 0xf
+    vand.vi \vf2_0, \vf2_0, 0xf;    vand.vi \vf3_0, \vf3_0, 0xf
+    vadd.vi \vf0_1, \vf0_1, -3;     vadd.vi \vf1_1, \vf1_1, -3
+    vadd.vi \vf2_1, \vf2_1, -3;     vadd.vi \vf3_1, \vf3_1, -3
+    vadd.vi \vf0_0, \vf0_0, -3;     vadd.vi \vf1_0, \vf1_0, -3 
+    vadd.vi \vf2_0, \vf2_0, -3;     vadd.vi \vf3_0, \vf3_0, -3 
+    vrgather.vv \vt0_0, \vf0_0, \vidx_low;  vrgather.vv \vt0_1, \vf0_1, \vidx_low
+    vrgather.vv \vt0_2, \vf0_0, \vidx_high; vrgather.vv \vt0_3, \vf0_1, \vidx_high
+    vrgather.vv \vt1_0, \vf1_0, \vidx_low;  vrgather.vv \vt1_1, \vf1_1, \vidx_low
+    vrgather.vv \vt1_2, \vf1_0, \vidx_high; vrgather.vv \vt1_3, \vf1_1, \vidx_high
+    vrgather.vv \vt2_0, \vf2_0, \vidx_low;  vrgather.vv \vt2_1, \vf2_1, \vidx_low
+    vrgather.vv \vt2_2, \vf2_0, \vidx_high; vrgather.vv \vt2_3, \vf2_1, \vidx_high
+    vrgather.vv \vt3_0, \vf3_0, \vidx_low;  vrgather.vv \vt3_1, \vf3_1, \vidx_low
+    vrgather.vv \vt3_2, \vf3_0, \vidx_high; vrgather.vv \vt3_3, \vf3_1, \vidx_high
+    vmerge.vvm  \vf0_0, \vt0_0, \vt0_1, v0; vmerge.vvm  \vf0_1, \vt0_2, \vt0_3, v0
+    vmerge.vvm  \vf1_0, \vt1_0, \vt1_1, v0; vmerge.vvm  \vf1_1, \vt1_2, \vt1_3, v0
+    vmerge.vvm  \vf2_0, \vt2_0, \vt2_1, v0; vmerge.vvm  \vf2_1, \vt2_2, \vt2_3, v0
+    vmerge.vvm  \vf3_0, \vt3_0, \vt3_1, v0; vmerge.vvm  \vf3_1, \vt3_2, \vt3_3, v0
+    vsetivli a7, 16, e16, m2, tu, mu
+    vsext.vf2 \vt0_0, \vf0_0;       vsext.vf2 \vt0_2, \vf0_1
+    vsext.vf2 \vt1_0, \vf1_0;       vsext.vf2 \vt1_2, \vf1_1
+    vsext.vf2 \vt2_0, \vf2_0;       vsext.vf2 \vt2_2, \vf2_1
+    vsext.vf2 \vt3_0, \vf3_0;       vsext.vf2 \vt3_2, \vf3_1
+    addi t2, a0, 16*2;  addi t3, a0, 16*4;  addi t4, a0, 16*6
+    vse16.v \vt0_0, (a0);           vse16.v \vt0_2, (t2)
+    vse16.v \vt1_0, (t3);           vse16.v \vt1_2, (t4)
+    addi t2, a0, 16*8;  addi t3, a0, 16*10; addi t4, a0, 16*12; addi t5, a0, 16*14
+    vse16.v \vt2_0, (t2);           vse16.v \vt2_2, (t3)
+    vse16.v \vt3_0, (t4);           vse16.v \vt3_2, (t5)
+    addi a0, a0, 16*16
+.endm
+
+.macro cbd3_core_x4 \
+        vf0_0, vf0_1, vf0_2, vf0_3, vt0_0, vt0_1, \
+        vf1_0, vf1_1, vf1_2, vf1_3, vt1_0, vt1_1, \
+        vf2_0, vf2_1, vf2_2, vf2_3, vt2_0, vt2_1, \
+        vf3_0, vf3_1, vf3_2, vf3_3, vt3_0, vt3_1, \
+        vidx8_0122, vidx_low, vidx_high, \
+        x0x249, x0x6DB, x0x70000
+    vsetivli a7, 16, e8, m1, tu, mu
+    addi t2, a1, 12;    addi t3, a1, 12*2;  addi t4, a1, 12*3
+    vle8.v \vf0_1, (a1);    vle8.v \vf1_1, (t2)
+    vle8.v \vf2_1, (t3);    vle8.v \vf3_1, (t4)
+    addi a1, a1, 12*4
+    vrgather.vv \vf0_0, \vf0_1, \vidx8_0122; vrgather.vv \vf1_0, \vf1_1, \vidx8_0122
+    vrgather.vv \vf2_0, \vf2_1, \vidx8_0122; vrgather.vv \vf3_0, \vf3_1, \vidx8_0122
+    vsetivli a7, 4, e32, m1, tu, mu
+    vsrl.vi \vf0_1, \vf0_0, 1;      vsrl.vi \vf0_2, \vf0_0, 2
+    vsrl.vi \vf1_1, \vf1_0, 1;      vsrl.vi \vf1_2, \vf1_0, 2
+    vsrl.vi \vf2_1, \vf2_0, 1;      vsrl.vi \vf2_2, \vf2_0, 2
+    vsrl.vi \vf3_1, \vf3_0, 1;      vsrl.vi \vf3_2, \vf3_0, 2
+    vand.vx \vf0_0, \vf0_0, \x0x249; vand.vx \vf0_1, \vf0_1, \x0x249; vand.vx \vf0_2, \vf0_2, \x0x249
+    vand.vx \vf1_0, \vf1_0, \x0x249; vand.vx \vf1_1, \vf1_1, \x0x249; vand.vx \vf1_2, \vf1_2, \x0x249
+    vand.vx \vf2_0, \vf2_0, \x0x249; vand.vx \vf2_1, \vf2_1, \x0x249; vand.vx \vf2_2, \vf2_2, \x0x249
+    vand.vx \vf3_0, \vf3_0, \x0x249; vand.vx \vf3_1, \vf3_1, \x0x249; vand.vx \vf3_2, \vf3_2, \x0x249
+    vadd.vv \vf0_0, \vf0_0, \vf0_1; vadd.vv \vf1_0, \vf1_0, \vf1_1
+    vadd.vv \vf2_0, \vf2_0, \vf2_1; vadd.vv \vf3_0, \vf3_0, \vf3_1
+    vadd.vv \vf0_0, \vf0_0, \vf0_2; vadd.vv \vf1_0, \vf1_0, \vf1_2
+    vadd.vv \vf2_0, \vf2_0, \vf2_2; vadd.vv \vf3_0, \vf3_0, \vf3_2
+    vsrl.vi \vf0_1, \vf0_0, 3;      vsrl.vi \vf1_1, \vf1_0, 3
+    vsrl.vi \vf2_1, \vf2_0, 3;      vsrl.vi \vf3_1, \vf3_0, 3
+    vadd.vx \vf0_0, \vf0_0, \x0x6DB;vadd.vx \vf1_0, \vf1_0, \x0x6DB
+    vadd.vx \vf2_0, \vf2_0, \x0x6DB;vadd.vx \vf3_0, \vf3_0, \x0x6DB
+    vsub.vv \vf0_0, \vf0_0, \vf0_1; vsub.vv \vf1_0, \vf1_0, \vf1_1
+    vsub.vv \vf2_0, \vf2_0, \vf2_1; vsub.vv \vf3_0, \vf3_0, \vf3_1
+    vsll.vi \vf0_1, \vf0_0, 10; vsrl.vi \vf0_2, \vf0_0, 12; vsrl.vi \vf0_3, \vf0_0, 2
+    vsll.vi \vf1_1, \vf1_0, 10; vsrl.vi \vf1_2, \vf1_0, 12; vsrl.vi \vf1_3, \vf1_0, 2
+    vsll.vi \vf2_1, \vf2_0, 10; vsrl.vi \vf2_2, \vf2_0, 12; vsrl.vi \vf2_3, \vf2_0, 2
+    vsll.vi \vf3_1, \vf3_0, 10; vsrl.vi \vf3_2, \vf3_0, 12; vsrl.vi \vf3_3, \vf3_0, 2
+    vand.vi \vf0_0, \vf0_0, 7;  vand.vx \vf0_1, \vf0_1, \x0x70000
+    vand.vi \vf0_2, \vf0_2, 7;  vand.vx \vf0_3, \vf0_3, \x0x70000
+    vand.vi \vf1_0, \vf1_0, 7;  vand.vx \vf1_1, \vf1_1, \x0x70000
+    vand.vi \vf1_2, \vf1_2, 7;  vand.vx \vf1_3, \vf1_3, \x0x70000
+    vand.vi \vf2_0, \vf2_0, 7;  vand.vx \vf2_1, \vf2_1, \x0x70000
+    vand.vi \vf2_2, \vf2_2, 7;  vand.vx \vf2_3, \vf2_3, \x0x70000
+    vand.vi \vf3_0, \vf3_0, 7;  vand.vx \vf3_1, \vf3_1, \x0x70000
+    vand.vi \vf3_2, \vf3_2, 7;  vand.vx \vf3_3, \vf3_3, \x0x70000
+    vadd.vv \vf0_0, \vf0_0, \vf0_1;   vadd.vv \vf0_1, \vf0_2, \vf0_3
+    vadd.vv \vf1_0, \vf1_0, \vf1_1;   vadd.vv \vf1_1, \vf1_2, \vf1_3
+    vadd.vv \vf2_0, \vf2_0, \vf2_1;   vadd.vv \vf2_1, \vf2_2, \vf2_3
+    vadd.vv \vf3_0, \vf3_0, \vf3_1;   vadd.vv \vf3_1, \vf3_2, \vf3_3
+    vsetivli a7, 8, e16, m1, tu, mu
+    vadd.vi \vf0_0, \vf0_0, -3;     vadd.vi \vf0_1, \vf0_1, -3
+    vadd.vi \vf1_0, \vf1_0, -3;     vadd.vi \vf1_1, \vf1_1, -3
+    vadd.vi \vf2_0, \vf2_0, -3;     vadd.vi \vf2_1, \vf2_1, -3
+    vadd.vi \vf3_0, \vf3_0, -3;     vadd.vi \vf3_1, \vf3_1, -3
+    vrgather.vv \vf0_2, \vf0_0, \vidx_low;  vrgather.vv \vf0_3, \vf0_1, \vidx_low
+    vrgather.vv \vt0_0, \vf0_0, \vidx_high; vrgather.vv \vt0_1, \vf0_1, \vidx_high
+    vrgather.vv \vf1_2, \vf1_0, \vidx_low;  vrgather.vv \vf1_3, \vf1_1, \vidx_low
+    vrgather.vv \vt1_0, \vf1_0, \vidx_high; vrgather.vv \vt1_1, \vf1_1, \vidx_high
+    vrgather.vv \vf2_2, \vf2_0, \vidx_low;  vrgather.vv \vf2_3, \vf2_1, \vidx_low
+    vrgather.vv \vt2_0, \vf2_0, \vidx_high; vrgather.vv \vt2_1, \vf2_1, \vidx_high
+    vrgather.vv \vf3_2, \vf3_0, \vidx_low;  vrgather.vv \vf3_3, \vf3_1, \vidx_low
+    vrgather.vv \vt3_0, \vf3_0, \vidx_high; vrgather.vv \vt3_1, \vf3_1, \vidx_high
+    vmerge.vvm  \vf0_0, \vf0_3, \vf0_2, v0;   vmerge.vvm  \vf0_1, \vt0_1, \vt0_0, v0
+    vmerge.vvm  \vf1_0, \vf1_3, \vf1_2, v0;   vmerge.vvm  \vf1_1, \vt1_1, \vt1_0, v0
+    vmerge.vvm  \vf2_0, \vf2_3, \vf2_2, v0;   vmerge.vvm  \vf2_1, \vt2_1, \vt2_0, v0
+    vmerge.vvm  \vf3_0, \vf3_3, \vf3_2, v0;   vmerge.vvm  \vf3_1, \vt3_1, \vt3_0, v0
+    addi t2, a0, 8*2;  addi t3, a0, 8*4;  addi t4, a0, 8*6
+    vse16.v \vf0_0, (a0); vse16.v \vf0_1, (t2)
+    vse16.v \vf1_0, (t3); vse16.v \vf1_1, (t4)
+    addi t2, a0, 8*8;  addi t3, a0, 8*10; addi t4, a0, 8*12; addi t5, a0, 8*14
+    vse16.v \vf2_0, (t2); vse16.v \vf2_1, (t3)
+    vse16.v \vf3_0, (t4); vse16.v \vf3_1, (t5)
+    addi a0, a0, 8*16
+.endm
+
 .globl ntt_rvv
 .align 2
 ntt_rvv:
@@ -353,6 +546,10 @@ ret
     vle16.v v0, (a5);   vle16.v v8, (a6)
     li t3, -10079;  li t2, 1441     // qinv*(mont^2/128) and mont^2/128
     addi a5, a1, \ZETA_EXP_INTT_0TO5_L0*2
+    // Through exhaustive testing, it is found that for any 16-bit signed
+    // number, after using Montgomery modular multiplication to multiply
+    // the mont^2/128 constant, the coefficient range is [-1999,1999]. Note
+    // that 1999/3329 is approximately 0.6005.
     montmul_const v16, v0, t2, t3, t0, v24
     montmul_const v24, v8, t2, t3, t0, v0
     vsetivli a7, 8, e16, m1, tu, mu
@@ -386,7 +583,6 @@ ret
     shuffle_x2 v16, v17, v18, v19, v8, v9, v10, v11, v1, v1
     shuffle_x2 v20, v21, v22, v23, v8, v9, v10, v11, v1, v1
     shuffle_x2 v24, v25, v26, v27, v8, v9, v10, v11, v1, v1
-    barrettRdc v16, v8, a4, t0
     shuffle_x2 v28, v29, v30, v31, v8, v9, v10, v11, v1, v1
     # level 3
     vl2re16.v v4, (a5); addi a5, a5, 8*2*2
@@ -402,7 +598,7 @@ ret
     shuffle_x2 v16, v18, v20, v22, v8, v9, v10, v11, v1, v2
     shuffle_x2 v24, v26, v28, v30, v8, v9, v10, v11, v1, v2
     shuffle_x2 v17, v19, v21, v23, v8, v9, v10, v11, v1, v2
-    barrettRdc v16, v8, a4, t0
+    barrettRdcX2 v16, v18, v8, v9, a4, t0
     shuffle_x2 v25, v27, v29, v31, v8, v9, v10, v11, v1, v2
     # level 4
     vl2re16.v v4, (a5); addi a5, a5, 8*2*2
@@ -415,10 +611,10 @@ ret
     # shuffle4
     addi t2, a1, _MASK_01230123*2; addi t3, a1, _MASK_45674567*2; li t6, 0x0f
     vle16.v v1, (t2); vle16.v v2, (t3); vmv.s.x v0, t6
+    barrettRdc v20, v8, a4, t0
     shuffle_x2 v16, v20, v24, v28, v8, v9, v10, v11, v1, v2
     shuffle_x2 v17, v21, v25, v29, v8, v9, v10, v11, v1, v2
     shuffle_x2 v18, v22, v26, v30, v8, v9, v10, v11, v1, v2
-    barrettRdc v16, v8, a4, t0
     lh t3, 0*2(a5);     lh t2, 1*2(a5)
     shuffle_x2 v19, v23, v27, v31, v8, v9, v10, v11, v1, v2
     # level 5
@@ -430,7 +626,7 @@ ret
         v18, v22, v26, v30, v19, v23, v27, v31, \
         t2,  t3,  t2,  t3,  t2,  t3,  t2,  t3, \
         t2,  t3,  t2,  t3,  t2,  t3,  t2,  t3, t0
-    barrettRdcX2 v0, v1, v16, v17, a4, t0
+    barrettRdc v1, v16, a4, t0
     addi a5, a0, (\off*128)*2;  addi a6, a0, (64+\off*128)*2
     vs8r.v v0, (a5);            vs8r.v v8, (a6)
 .endm
@@ -756,6 +952,7 @@ ret
 poly_reduce_rvv:
     li a7, 16*8;    li t0, 3329
     vsetvli a7, a7, e16, m8, tu, mu
+    csrwi vxrm, 0   # round-to-nearest-up (add +0.5 LSB)
     li a6, 20159;   add  t4, a0, 256*2  
     slli t3, a7, 2; slli a7, a7, 1
 poly_reduce_rvv_loop:
@@ -860,4 +1057,94 @@ ntt2normal_order_rvv_loop:
     vs4r.v v8, (a0);    vs4r.v v12, (a5)
     addi a2, a2, -1;    addi a0, a5, 4*8*2
     bnez a2, ntt2normal_order_rvv_loop
+ret
+
+// void rej_uniform_rvv(int16_t *r, const uint8_t *buf, const int16_t *table, uint32_t *ctr_p, uint32_t *pos_p)
+.globl rej_uniform_rvv
+.align 2
+rej_uniform_rvv:
+    li t0, 0xfff;   li t1, 3329
+    vsetivli a7, 8, e16, m1, tu, mu
+    addi t2, a2, _REJ_UNIFORM_IDX8*2
+    addi t3, a2, _REJ_UNIFORM_MASK_01*2
+    vle16.v v30, (t2);  vle16.v v31, (t3)
+    vmseq.vi v0, v31, 1
+    addi a5, a0, 0; addi a6, a1, 0
+# do...while(ctr <= KYBER_N - 8*4 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12*4)
+rej_uniform_rvv_loop_x4:
+    rej_core_x4 v8, v9, v10, v11, v12, v13, v14, v15, \
+        v16, v17, v18, v19, v30, t0, t1
+    sub  t2, a0, a5;    li  t4, 256-8*4
+    srli t2, t2, 1;     sub t3, a1, a6
+    li   t5, 504-12*4
+    bgtu t2, t4, rej_uniform_rvv_loopend_x4
+    bleu t3, t5, rej_uniform_rvv_loop_x4
+rej_uniform_rvv_loopend_x4:
+# while(ctr <= KYBER_N - 8*2 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12*2)
+rej_uniform_rvv_loop_x2:
+    sub  t2, a0, a5;    li  t4, 256-8*2
+    srli t2, t2, 1;     sub t3, a1, a6
+    li   t5, 504-12*2
+    bgtu t2, t4, rej_uniform_rvv_loopend_x2
+    bgtu t3, t5, rej_uniform_rvv_loopend_x2
+    rej_core_x2 v8, v9, v12, v13, v16, v17, v30, t0, t1
+    j rej_uniform_rvv_loop_x2
+rej_uniform_rvv_loopend_x2:
+# while(ctr <= KYBER_N - 8 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12)
+rej_uniform_rvv_loop_x1:
+    sub  t2, a0, a5;    li  t4, 256-8
+    srli t2, t2, 1;     sub t3, a1, a6
+    li   t5, 504-12
+    bgtu t2, t4, rej_uniform_rvv_loopend_x1
+    bgtu t3, t5, rej_uniform_rvv_loopend_x1
+    rej_core v8, v12, v16, v30, t0, t1
+    j rej_uniform_rvv_loop_x1
+rej_uniform_rvv_loopend_x1:
+    sw t2, (a3);    sw t3, (a4)
+ret
+
+// void cbd2_rvv(int16_t *r, const uint8_t *buf, const int16_t *table)
+.globl cbd2_rvv
+.align 2
+cbd2_rvv:
+    li t0, 0x55;    li t1, 0x33
+    vsetivli a7, 16, e8, m1, tu, mu
+    addi t2, a2, _CBD2_MASK_E8_01*2
+    addi t3, a2, _CBD2_IDX8_LOW*2
+    addi t4, a2, _CBD2_IDX8_HIGH*2
+    vle8.v v29, (t2); vle8.v v30, (t3); vle8.v v31, (t4)
+    li a4, 2
+    vmseq.vi v0, v29, 1
+cbd2_rvv_loop:
+    cbd2_core_x4 v1, v2, v3, v4, v5, v6, v7, v8, \
+        v10, v11, v12, v13, v14, v15, v16, v17, \
+        v18, v19, v20, v21, v22, v23, v24, v25, \
+        v30, v31, t0, t1
+    addi a4, a4, -1
+    bnez a4, cbd2_rvv_loop
+ret
+
+// void cbd3_rvv(int16_t *r, const uint8_t *buf, const int16_t *table)
+.globl cbd3_rvv
+.align 2
+cbd3_rvv:
+    li t0, 0x249249;    li t1, 0x6DB6DB
+    li a3, 0x70000;     li a4, 4
+    vsetivli a7, 8, e16, m1, tu, mu
+    addi t2, a2, _CBD3_MASK_E16_1100*2
+    addi t3, a2, _CBD3_MASK_E8_0122*2
+    addi t4, a2, _CBD3_IDX16_LOW*2
+    addi t5, a2, _CBD3_IDX16_HIGH*2
+    vle16.v v28, (t2);  vle16.v v29, (t3)
+    vle16.v v30, (t4);  vle16.v v31, (t5)
+    vmseq.vi v0, v28, 1
+cbd3_rvv_loop:
+    cbd3_core_x4 \
+        v2, v3, v4, v5, v6, v7, \
+        v8, v9, v10,v11,v12,v13,\
+        v14,v15,v16,v17,v18,v19,\
+        v20,v21,v22,v23,v24,v25,\
+        v29, v30, v31, t0, t1, a3
+    addi a4, a4, -1
+    bnez a4, cbd3_rvv_loop
 ret

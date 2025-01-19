@@ -31,5 +31,10 @@ extern void poly_tomont_rvv(int16_t *r);
 
 extern void ntt2normal_order_rvv(int16_t *r, const int16_t *table);
 extern void normal2ntt_order_rvv(int16_t *r, const int16_t *table);
+extern void rej_uniform_rvv(int16_t *r, const uint8_t *buf,
+                            const int16_t *table, uint32_t *ctr_p,
+                            uint32_t *pos_p);
+extern void cbd2_rvv(int16_t *r, const uint8_t *buf, const int16_t *table);
+extern void cbd3_rvv(int16_t *r, const uint8_t *buf, const int16_t *table);
 
 #endif
