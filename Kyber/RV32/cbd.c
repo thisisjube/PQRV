@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "ntt_rvv.h"
+#include "ntt_rvv_vlen128.h"
 #include "params.h"
 
 /*************************************************
@@ -18,7 +18,7 @@
 #if defined(VECTOR128)
 static void cbd2(poly *r, const uint8_t buf[2 * KYBER_N / 4])
 {
-    cbd2_rvv(r->coeffs, buf, qdata);
+    cbd2_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
 }
 #else
 /*************************************************
@@ -76,7 +76,7 @@ static void cbd2(poly *r, const uint8_t buf[2 * KYBER_N / 4])
 #    if defined(VECTOR128)
 static void cbd3(poly *r, const uint8_t buf[3 * KYBER_N / 4])
 {
-    cbd3_rvv(r->coeffs, buf, qdata);
+    cbd3_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
 }
 #    else
 /*************************************************

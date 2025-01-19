@@ -1097,20 +1097,20 @@ void poly_intt(poly *a)
 void poly_reduce(poly *a)
 {
     DBENCH_START();
-    poly_reduce_rvv(a->coeffs);
+    poly_reduce_rvv_vlen128(a->coeffs);
     DBENCH_STOP(*tred);
 }
 
 void poly_pointwise(poly *c, const poly *a, const poly *b)
 {
     DBENCH_START();
-    poly_basemul_8l_rvv(c->coeffs, a->coeffs, b->coeffs);
+    poly_basemul_rvv_vlen128(c->coeffs, a->coeffs, b->coeffs);
     DBENCH_STOP(*tmul);
 }
 
 void poly_pointwise_acc(poly *c, const poly *a, const poly *b)
 {
-    poly_basemul_acc_8l_rvv(c->coeffs, a->coeffs, b->coeffs);
+    poly_basemul_acc_rvv_vlen128(c->coeffs, a->coeffs, b->coeffs);
 }
 
 #elif defined(RV64)

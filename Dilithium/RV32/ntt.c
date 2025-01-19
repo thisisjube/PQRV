@@ -9,18 +9,18 @@
 
 void ntt(int32_t a[N])
 {
-    ntt_8l_rvv(a, qdata);
+    ntt_rvv_vlen128(a, qdata_vlen128);
 }
 
 void intt(int32_t a[N])
 {
-    intt_8l_rvv(a, qdata);
+    intt_rvv_vlen128(a, qdata_vlen128);
 }
 
 #elif defined(RV32)
 // RV32IM assembly optimized implementation with Montgomery arithmetic
 
-int32_t zetas_ntt_8l_rv32im[256 * 2] = {
+int32_t zetas_ntt_rv32im[256 * 2] = {
     25847,    1830765815,  -2608894, -1929875198, -518909,  -1927777021,
     237124,   1640767044,  -777960,  1477910808,  -876248,  1612161320,
     466468,   1640734244,  1826347,  308362795,   2725464,  1727305304,
@@ -108,7 +108,7 @@ int32_t zetas_ntt_8l_rv32im[256 * 2] = {
     3839961,  -894060583,  -846154,  -540420426,  1976782,  374860238,
 };
 
-int32_t zetas_intt_8l_rv32im[256 * 2] = {
+int32_t zetas_intt_rv32im[256 * 2] = {
     -1976782, -374860238,  846154,   540420426,   -3839961, 894060583,
     -1400424, -400711272,  -3937738, 973777462,   3628969,  -1146323031,
     1362209,  -1934038751, 48306,    -2036925262, 3881060,  -985155484,
@@ -198,12 +198,12 @@ int32_t zetas_intt_8l_rv32im[256 * 2] = {
 
 void ntt(int32_t a[N])
 {
-    ntt_8l_rv32im(a, zetas_ntt_8l_rv32im);
+    ntt_rv32im(a, zetas_ntt_rv32im);
 }
 
 void intt(int32_t a[N])
 {
-    intt_8l_rv32im(a, zetas_intt_8l_rv32im);
+    intt_rv32im(a, zetas_intt_rv32im);
 }
 
 #else

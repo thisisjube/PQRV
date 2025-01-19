@@ -11,7 +11,7 @@
 #include "randombytes.h"
 #include "sign.h"
 #if defined(VECTOR128)
-#    include "ntt_rvv.h"
+#    include "ntt_rvv_vlen128.h"
 #endif
 
 #define MLEN 32
@@ -85,7 +85,7 @@ int main(void)
 #if defined(VECTOR128) && !defined(REF_IMPL)
         for (k = 0; k < K; k++)
             for (j = 0; j < L; j++)
-                ntt2normal_order_8l_rvv(mat[k].vec[j].coeffs, qdata);
+                ntt2normal_order_rvv_vlen128(mat[k].vec[j].coeffs, qdata_vlen128);
 #endif
         printf("A = ([");
         for (j = 0; j < K; ++j) {
@@ -106,7 +106,7 @@ int main(void)
 #if defined(VECTOR128) && !defined(REF_IMPL)
         for (k = 0; k < K; k++)
             for (j = 0; j < L; j++)
-                normal2ntt_order_8l_rvv(mat[k].vec[j].coeffs, qdata);
+                normal2ntt_order_rvv_vlen128(mat[k].vec[j].coeffs, qdata_vlen128);
 #endif
 
         polyvecl_uniform_eta(&s, seed, 0);

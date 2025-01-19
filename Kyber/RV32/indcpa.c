@@ -6,7 +6,7 @@
 
 #include "fips202x.h"
 #include "ntt.h"
-#include "ntt_rvv.h"
+#include "ntt_rvv_vlen128.h"
 #include "params.h"
 #include "poly.h"
 #include "polyvec.h"
@@ -30,7 +30,7 @@ static void pack_pk(uint8_t r[KYBER_INDCPA_PUBLICKEYBYTES], polyvec *pk,
     size_t i;
 #if defined(VECTOR128)
     for (i = 0; i < KYBER_K; i++)
-        ntt2normal_order_rvv(pk->vec[i].coeffs, qdata);
+        ntt2normal_order_rvv_vlen128(pk->vec[i].coeffs, qdata_vlen128);
 #endif
     polyvec_tobytes(r, pk);
     for (i = 0; i < KYBER_SYMBYTES; i++)
@@ -73,7 +73,7 @@ static void pack_sk(uint8_t r[KYBER_INDCPA_SECRETKEYBYTES], polyvec *sk)
 #if defined(VECTOR128)
     size_t i;
     for (i = 0; i < KYBER_K; i++)
-        ntt2normal_order_rvv(sk->vec[i].coeffs, qdata);
+        ntt2normal_order_rvv_vlen128(sk->vec[i].coeffs, qdata_vlen128);
 #endif
     polyvec_tobytes(r, sk);
 }
@@ -179,7 +179,7 @@ static unsigned int rej_uniform_vector(int16_t *r, const uint8_t *buf)
 {
     unsigned int ctr, pos;
     uint16_t val0, val1;
-    rej_uniform_rvv(r, buf, qdata, &ctr, &pos);
+    rej_uniform_rvv_vlen128(r, buf, qdata_vlen128, &ctr, &pos);
     while (ctr < KYBER_N && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 3) {
         val0 =
             ((buf[pos + 0] >> 0) | ((uint16_t)buf[pos + 1] << 8)) & 0xFFF;
@@ -250,7 +250,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
     free(statex2);
 }
 
@@ -300,7 +300,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
     free(statex4);
 }
 #    endif
@@ -359,7 +359,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
     free(statex3);
 }
 #endif
@@ -464,7 +464,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
 
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
 }
 #elif KYBER_K == 4 && defined(RV32IMBV)
 // using 4x 3-way sha3 + 1x 4-way sha3
@@ -564,7 +564,7 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
 
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv(a[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
 }
 #endif
 

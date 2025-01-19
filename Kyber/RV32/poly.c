@@ -151,7 +151,7 @@ void poly_frombytes(poly *r, const uint8_t a[KYBER_POLYBYTES])
             ((a[3 * i + 1] >> 4) | ((uint16_t)a[3 * i + 2] << 4)) & 0xFFF;
     }
 #if defined(VECTOR128)
-    normal2ntt_order_rvv(r->coeffs, qdata);
+    normal2ntt_order_rvv_vlen128(r->coeffs, qdata_vlen128);
 #endif
 }
 
@@ -310,50 +310,50 @@ void poly_intt(poly *r)
 
 void poly_basemul(poly *r, const poly *a, const poly *b)
 {
-    poly_basemul_rvv(r->coeffs, a->coeffs, b->coeffs, qdata);
+    poly_basemul_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128);
 }
 
 void poly_basemul_acc(poly *r, const poly *a, const poly *b)
 {
-    poly_basemul_acc_rvv(r->coeffs, a->coeffs, b->coeffs, qdata);
+    poly_basemul_acc_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128);
 }
 
 void poly_basemul_cache_init(poly *r, const poly *a, const poly *b,
                              poly_half *b_cache)
 {
-    poly_basemul_cache_init_rvv(r->coeffs, a->coeffs, b->coeffs, qdata,
+    poly_basemul_cache_init_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
                                 b_cache->coeffs);
 }
 
 void poly_basemul_acc_cache_init(poly *r, const poly *a, const poly *b,
                                  poly_half *b_cache)
 {
-    poly_basemul_acc_cache_init_rvv(r->coeffs, a->coeffs, b->coeffs, qdata,
+    poly_basemul_acc_cache_init_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
                                     b_cache->coeffs);
 }
 
 void poly_basemul_cached(poly *r, const poly *a, const poly *b,
                          poly_half *b_cache)
 {
-    poly_basemul_cached_rvv(r->coeffs, a->coeffs, b->coeffs, qdata,
+    poly_basemul_cached_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
                             b_cache->coeffs);
 }
 
 void poly_basemul_acc_cached(poly *r, const poly *a, const poly *b,
                              poly_half *b_cache)
 {
-    poly_basemul_acc_cached_rvv(r->coeffs, a->coeffs, b->coeffs, qdata,
+    poly_basemul_acc_cached_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
                                 b_cache->coeffs);
 }
 
 void poly_tomont(poly *r)
 {
-    poly_tomont_rvv(r->coeffs);
+    poly_tomont_rvv_vlen128(r->coeffs);
 }
 
 void poly_reduce(poly *r)
 {
-    poly_reduce_rvv(r->coeffs);
+    poly_reduce_rvv_vlen128(r->coeffs);
 }
 
 #elif defined(RV32)

@@ -39,7 +39,7 @@ all: \
 # out/test_plantard
 # out/test_mul
 
-out/test_sampling_vlen128: $(SOURCES) $(HEADERS) test_sampling_vlen128.c $(KYBERNTTDIR)/ntt_rvv.S $(KYBERNTTDIR)/consts.c $(KYBERNTTDIR)/consts.h
+out/test_sampling_vlen128: $(SOURCES) $(HEADERS) test_sampling_vlen128.c $(KYBERNTTDIR)/ntt_rvv_vlen128.S $(KYBERNTTDIR)/consts_vlen128.c $(KYBERNTTDIR)/consts_vlen128.h
 	mkdir -p out
 	$(CC) $(CFLAGS) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
@@ -49,22 +49,22 @@ out/test_add: $(SOURCES) $(HEADERS) add.c
 	$(CC) $(CFLAGS) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
 
-out/test_dilithium_mont_rv32imv: test_dilithium_mont_rvv.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_rvv.S $(DILITHIUMNTTDIR)/consts.c $(DILITHIUMNTTDIR)/consts.h
+out/test_dilithium_mont_rv32imv: test_dilithium_mont_rvv.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_rvv_vlen128.S $(DILITHIUMNTTDIR)/consts_vlen128.c $(DILITHIUMNTTDIR)/consts_vlen128.h
 	mkdir -p out
 	$(CC) -I$(DILITHIUMNTTDIR) $(CFLAGS_RV32IMBV) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
 
-out/test_dilithium_mont_rv64imv: test_dilithium_mont_rvv.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_rvv.S $(DILITHIUMNTTDIR)/consts.c $(DILITHIUMNTTDIR)/consts.h
+out/test_dilithium_mont_rv64imv: test_dilithium_mont_rvv.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_rvv_vlen128.S $(DILITHIUMNTTDIR)/consts_vlen128.c $(DILITHIUMNTTDIR)/consts_vlen128.h
 	mkdir -p out
 	$(CC) -I$(DILITHIUMNTTDIR) $(CFLAGS_RV64IMBV) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
 
-out/test_dilithium_singleissue_plant_ntt_rv64: test_dilithium_plant_ntt_rv64.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_8l_singleissue_plant_rv64im.S
+out/test_dilithium_singleissue_plant_ntt_rv64: test_dilithium_plant_ntt_rv64.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_singleissue_plant_rv64im.S
 	mkdir -p out
 	$(CC) $(CFLAGS_RV64IM) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
 
-out/test_dilithium_dualissue_plant_ntt_rv64: test_dilithium_plant_ntt_rv64.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_8l_dualissue_plant_rv64im.S
+out/test_dilithium_dualissue_plant_ntt_rv64: test_dilithium_plant_ntt_rv64.c $(SOURCES) $(HEADERS) $(DILITHIUMNTTDIR)/ntt_dualissue_plant_rv64im.S
 	mkdir -p out
 	$(CC) $(CFLAGS_RV64IM) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
@@ -74,7 +74,7 @@ out/test_kyber_mont_ntt_rv32: test_kyber_mont_ntt_rv32.c $(SOURCES) $(HEADERS) $
 	$(CC) $(CFLAGS_RV32IM) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/
 
-out/test_kyber_ntt_rvv: test_kyber_ntt_rvv.c $(SOURCES) $(HEADERS) $(KYBERNTTDIR)/ntt_rvv.S $(KYBERNTTDIR)/consts.c $(KYBERNTTDIR)/consts.h
+out/test_kyber_ntt_rvv: test_kyber_ntt_rvv.c $(SOURCES) $(HEADERS) $(KYBERNTTDIR)/ntt_rvv_vlen128.S $(KYBERNTTDIR)/consts_vlen128.c $(KYBERNTTDIR)/consts_vlen128.h
 	mkdir -p out
 	$(CC) -I$(KYBERNTTDIR) $(CFLAGS_RV32IMBV) $(filter %.c, $^) $(filter %.S, $^) -o $@
 	scp $@ root@$(TARGET_IP):/sharefs/

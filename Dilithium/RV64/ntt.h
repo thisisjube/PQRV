@@ -10,7 +10,7 @@ void ntt(int32_t a[N]);
 void intt(int32_t a[N]);
 
 #if defined(VECTOR128)
-#    include "ntt_rvv.h"
+#    include "ntt_rvv_vlen128.h"
 #endif
 
 #endif

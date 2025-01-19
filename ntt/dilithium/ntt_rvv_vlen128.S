@@ -1,4 +1,4 @@
-#include "consts.h"
+#include "consts_vlen128.h"
 
 // [a0,a1,a2,a3]+[a4,a5,a6,a7] -> [a0,a1,a4,a5]+[a2,a3,a6,a7]
 // related masks are ready for using
@@ -604,7 +604,7 @@
 
 # Do not use the vlse instruction to implement NTT, as its latency is higher than that of the vle instruction.
 # This is a version using vector-grouping. The performance is slightly slower than normal version
-# .macro ntt_8l_level0to3_rvv off
+# .macro ntt_level0to3_rvv off
 #     vsetivli t2, 4, e32, m1, tu, mu
 #     lw   t2, (_ZETA_EXP_0TO3_L0+0)*4(a1)
 #     lw   t1, (_ZETA_EXP_0TO3_L0+1)*4(a1)
@@ -699,7 +699,7 @@
 #     vse32.v v31, (a0);          addi a0, a0, -(4*\off+16*15)*4
 # .endm
 
-.macro ntt_8l_level0to3_rvv off
+.macro ntt_level0to3_rvv off
     lw   t2, (_ZETA_EXP_0TO3_L0+0)*4(a1)
     lw   t1, (_ZETA_EXP_0TO3_L0+1)*4(a1)
     addi a0, a0, (4*\off)*4
@@ -803,7 +803,7 @@
     vse32.v v31, (a0);          addi a0, a0, -(4*\off+16*15)*4
 .endm
 
-.macro ntt_8l_level4to7_rvv off, ZETA_EXP_4TO7_L4, ZETA_EXP_4TO7_L5, ZETA_EXP_4TO7_L6, ZETA_EXP_4TO7_L7
+.macro ntt_level4to7_rvv off, ZETA_EXP_4TO7_L4, ZETA_EXP_4TO7_L5, ZETA_EXP_4TO7_L6, ZETA_EXP_4TO7_L7
     li   a4, \ZETA_EXP_4TO7_L4*4
     add  a4, a4, a1
     lw   t2, 0*4(a4)
@@ -976,7 +976,7 @@
     vse32.v v31, (a0);          addi a0, a0, -(64*\off+4*15)*4
 .endm
 
-.macro intt_8l_level0to3_rvv off, ZETA_INTT_0TO3_L0, ZETA_INTT_0TO3_L1, ZETA_INTT_0TO3_L2, ZETA_INTT_0TO3_L3
+.macro intt_level0to3_rvv off, ZETA_INTT_0TO3_L0, ZETA_INTT_0TO3_L1, ZETA_INTT_0TO3_L2, ZETA_INTT_0TO3_L3
     addi a0, a0, (64*\off)*4
     vle32.v v1,  (a0);          addi a0, a0, 4*4
     vle32.v v2,  (a0);          addi a0, a0, 4*4
@@ -1151,7 +1151,7 @@
     vse32.v v16, (a0);          addi a0, a0, -(64*\off+4*15)*4
 .endm
 
-.macro intt_8l_level4to7_rvv off
+.macro intt_level4to7_rvv off
     addi a0, a0, (4*\off)*4
     vle32.v v1,  (a0);          addi a0, a0, 16*4
     vle32.v v2,  (a0);          addi a0, a0, 16*4
@@ -1277,78 +1277,78 @@
 # inv256qinv <- low(inv256*qinv)
 .equ inv256qinv, 4286571514
 
-.globl ntt_8l_rvv
+.globl ntt_rvv_vlen128
 .align 2
-ntt_8l_rvv:
+ntt_rvv_vlen128:
     vsetivli t2, 4, e32, m1, tu, mu
     li t0, q
-    ntt_8l_level0to3_rvv 0
-    ntt_8l_level0to3_rvv 1
-    ntt_8l_level0to3_rvv 2
-    ntt_8l_level0to3_rvv 3
-    ntt_8l_level4to7_rvv 0, \
+    ntt_level0to3_rvv 0
+    ntt_level0to3_rvv 1
+    ntt_level0to3_rvv 2
+    ntt_level0to3_rvv 3
+    ntt_level4to7_rvv 0, \
         _ZETA_EXP_4TO7_P0_L4, _ZETA_EXP_4TO7_P0_L5, \
         _ZETA_EXP_4TO7_P0_L6, _ZETA_EXP_4TO7_P0_L7
-    ntt_8l_level4to7_rvv 1, \
+    ntt_level4to7_rvv 1, \
         _ZETA_EXP_4TO7_P1_L4, _ZETA_EXP_4TO7_P1_L5, \
         _ZETA_EXP_4TO7_P1_L6, _ZETA_EXP_4TO7_P1_L7
-    ntt_8l_level4to7_rvv 2, \
+    ntt_level4to7_rvv 2, \
         _ZETA_EXP_4TO7_P2_L4, _ZETA_EXP_4TO7_P2_L5, \
         _ZETA_EXP_4TO7_P2_L6, _ZETA_EXP_4TO7_P2_L7
-    ntt_8l_level4to7_rvv 3, \
+    ntt_level4to7_rvv 3, \
         _ZETA_EXP_4TO7_P3_L4, _ZETA_EXP_4TO7_P3_L5, \
         _ZETA_EXP_4TO7_P3_L6, _ZETA_EXP_4TO7_P3_L7
 ret
 
-.globl intt_8l_rvv
+.globl intt_rvv_vlen128
 .align 2
-intt_8l_rvv:
+intt_rvv_vlen128:
     vsetivli t2, 4, e32, m1, tu, mu
     li t0, q
-    intt_8l_level0to3_rvv 0, \
+    intt_level0to3_rvv 0, \
         _ZETA_EXP_INTT_0TO3_P0_L0, _ZETA_EXP_INTT_0TO3_P0_L1, \
         _ZETA_EXP_INTT_0TO3_P0_L2, _ZETA_EXP_INTT_0TO3_P0_L3
-    intt_8l_level0to3_rvv 1, \
+    intt_level0to3_rvv 1, \
         _ZETA_EXP_INTT_0TO3_P1_L0, _ZETA_EXP_INTT_0TO3_P1_L1, \
         _ZETA_EXP_INTT_0TO3_P1_L2, _ZETA_EXP_INTT_0TO3_P1_L3
-    intt_8l_level0to3_rvv 2, \
+    intt_level0to3_rvv 2, \
         _ZETA_EXP_INTT_0TO3_P2_L0, _ZETA_EXP_INTT_0TO3_P2_L1, \
         _ZETA_EXP_INTT_0TO3_P2_L2, _ZETA_EXP_INTT_0TO3_P2_L3
-    intt_8l_level0to3_rvv 3, \
+    intt_level0to3_rvv 3, \
         _ZETA_EXP_INTT_0TO3_P3_L0, _ZETA_EXP_INTT_0TO3_P3_L1, \
         _ZETA_EXP_INTT_0TO3_P3_L2, _ZETA_EXP_INTT_0TO3_P3_L3
-    intt_8l_level4to7_rvv 0
-    intt_8l_level4to7_rvv 1
-    intt_8l_level4to7_rvv 2
-    intt_8l_level4to7_rvv 3
+    intt_level4to7_rvv 0
+    intt_level4to7_rvv 1
+    intt_level4to7_rvv 2
+    intt_level4to7_rvv 3
 ret
 
-.globl poly_basemul_8l_rvv
+.globl poly_basemul_rvv_vlen128
 .align 2
-poly_basemul_8l_rvv:
+poly_basemul_rvv_vlen128:
     li t2, 32
     vsetvli t2, t2, e32, m8, tu, mu
     li t0, q
     li t1, qinv
     li t2, 8
-poly_basemul_8l_rvv_loop:
+poly_basemul_rvv_vlen128_loop:
     vle32.v v0,  (a1);          addi a1, a1, 4*4*8
     vle32.v v8,  (a2);          addi a2, a2, 4*4*8
     montmul_ref v16, v0, v8, t0, t1, v24
     vse32.v v16, (a0);          addi a0, a0, 4*4*8
     addi t2, t2, -1
-    bnez t2, poly_basemul_8l_rvv_loop
+    bnez t2, poly_basemul_rvv_vlen128_loop
 ret
 
-.globl poly_basemul_acc_8l_rvv
+.globl poly_basemul_acc_rvv_vlen128
 .align 2
-poly_basemul_acc_8l_rvv:
+poly_basemul_acc_rvv_vlen128:
     li t2, 32
     vsetvli t2, t2, e32, m8, tu, mu
     li t0, q
     li t1, qinv
     li t2, 8
-poly_basemul_acc_8l_rvv_loop:
+poly_basemul_acc_rvv_vlen128_loop:
     vle32.v v0,  (a1);      addi a1, a1, 4*4*8
     vle32.v v8,  (a2);      addi a2, a2, 4*4*8
     montmul_ref v16, v0, v8, t0, t1, v24
@@ -1356,12 +1356,12 @@ poly_basemul_acc_8l_rvv_loop:
     vadd.vv v24, v24, v16
     vse32.v v24, (a0);      addi a0, a0, 4*4*8
     addi t2, t2, -1
-    bnez t2, poly_basemul_acc_8l_rvv_loop
+    bnez t2, poly_basemul_acc_rvv_vlen128_loop
 ret
 
-.globl ntt2normal_order_8l_rvv
+.globl ntt2normal_order_rvv_vlen128
 .align 2
-ntt2normal_order_8l_rvv:
+ntt2normal_order_rvv_vlen128:
     vsetivli t2, 4, e32, m1, tu, mu
     # for vgather
     li   t4, _MASK_0101*4
@@ -1381,7 +1381,7 @@ ntt2normal_order_8l_rvv:
     add  t4, t4, a1
     vle32.v v27,  (t4)
     li a2, 4
-ntt2normal_order_8l_rvv_loop:
+ntt2normal_order_rvv_vlen128_loop:
     vle32.v v1,  (a0);          addi a0, a0, 4*4
     vle32.v v2,  (a0);          addi a0, a0, 4*4
     vle32.v v3,  (a0);          addi a0, a0, 4*4
@@ -1433,12 +1433,12 @@ ntt2normal_order_8l_rvv_loop:
     vse32.v v15, (a0);          addi a0, a0, 4*4
     vse32.v v16, (a0);          addi a0, a0, 4*4
     addi a2, a2, -1
-    bnez a2, ntt2normal_order_8l_rvv_loop
+    bnez a2, ntt2normal_order_rvv_vlen128_loop
 ret
 
-.globl normal2ntt_order_8l_rvv
+.globl normal2ntt_order_rvv_vlen128
 .align 2
-normal2ntt_order_8l_rvv:
+normal2ntt_order_rvv_vlen128:
     vsetivli t2, 4, e32, m1, tu, mu
     # for vgather
     li   t4, _MASK_0101*4
@@ -1458,7 +1458,7 @@ normal2ntt_order_8l_rvv:
     add  t4, t4, a1
     vle32.v v27,  (t4)
     li a2, 4
-normal2ntt_order_8l_rvv_loop:
+normal2ntt_order_rvv_vlen128_loop:
     vle32.v v1,  (a0);          addi a0, a0, 4*4
     vle32.v v2,  (a0);          addi a0, a0, 4*4
     vle32.v v3,  (a0);          addi a0, a0, 4*4
@@ -1510,19 +1510,19 @@ normal2ntt_order_8l_rvv_loop:
     vse32.v v15, (a0);          addi a0, a0, 4*4
     vse32.v v16, (a0);          addi a0, a0, 4*4
     addi a2, a2, -1
-    bnez a2, normal2ntt_order_8l_rvv_loop
+    bnez a2, normal2ntt_order_rvv_vlen128_loop
 ret
 
-.globl poly_reduce_rvv
+.globl poly_reduce_rvv_vlen128
 .align 2
-poly_reduce_rvv:
+poly_reduce_rvv_vlen128:
     li t2, 32
     vsetvli t2, t2, e32, m8, tu, mu
     li a1, 4194304  # 1<<22
     li a2, q
     li a3, 4
     addi a4, a0, 0
-poly_reduce_rvv_loop:
+poly_reduce_rvv_vlen128_loop:
     vle32.v v0,  (a0);          addi a0, a0, 4*4*8
     vle32.v v8,  (a0);          addi a0, a0, 4*4*8
     vadd.vx v16, v0,  a1
@@ -1536,5 +1536,5 @@ poly_reduce_rvv_loop:
     vse32.v v0,  (a4);          addi a4, a4, 4*4*8
     vse32.v v8,  (a4);          addi a4, a4, 4*4*8
     addi a3, a3, -1
-    bnez a3, poly_reduce_rvv_loop
+    bnez a3, poly_reduce_rvv_vlen128_loop
 ret

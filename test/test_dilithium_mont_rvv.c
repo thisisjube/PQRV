@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "consts.h"
+#include "consts_vlen128.h"
 #include "cpucycles.h"
 #include "speed_print.h"
 
@@ -62,7 +62,7 @@ int32_t montgomery_reduce(int64_t a)
     return t;
 }
 
-void ntt_8l_ref(int32_t a[N])
+void ntt_ref(int32_t a[N])
 {
     unsigned int len, start, j, k;
     int32_t zeta, t;
@@ -82,7 +82,7 @@ void ntt_8l_ref(int32_t a[N])
     }
 }
 
-void intt_8l_ref(int32_t a[N])
+void intt_ref(int32_t a[N])
 {
     unsigned int start, len, j, k;
     int32_t t, zeta;
@@ -153,14 +153,14 @@ void poly_naivemul(int32_t *c, int32_t *a, int32_t *b)
         c[i] = r[i];
 }
 
-extern const int32_t qdata[1000];
-extern void ntt_8l_rvv(int32_t *r, const int32_t *qdata);
-extern void intt_8l_rvv(int32_t *r, const int32_t *qdata);
-extern void poly_basemul_8l_rvv(int32_t *r, int32_t *a, int32_t *b);
-extern void poly_basemul_acc_8l_rvv(int32_t *r, int32_t *a, int32_t *b);
-extern void ntt2normal_order_8l_rvv(int32_t *r, const int32_t *qdata);
-extern void normal2ntt_order_8l_rvv(int32_t *r, const int32_t *qdata);
-extern void poly_reduce_rvv(int32_t *r);
+extern const int32_t qdata_vlen128[1000];
+extern void ntt_rvv_vlen128(int32_t *r, const int32_t *qdata_vlen128);
+extern void intt_rvv_vlen128(int32_t *r, const int32_t *qdata_vlen128);
+extern void poly_basemul_rvv_vlen128(int32_t *r, int32_t *a, int32_t *b);
+extern void poly_basemul_acc_rvv_vlen128(int32_t *r, int32_t *a, int32_t *b);
+extern void ntt2normal_order_rvv_vlen128(int32_t *r, const int32_t *qdata_vlen128);
+extern void normal2ntt_order_rvv_vlen128(int32_t *r, const int32_t *qdata_vlen128);
+extern void poly_reduce_rvv_vlen128(int32_t *r);
 
 #define NTESTS 1000
 uint64_t t[NTESTS];
@@ -174,11 +174,11 @@ int main()
         a[i] = 1;
     for (i = 0; i < N; i++)
         b[i] = 1;
-    ntt_8l_ref(a);
-    ntt_8l_rvv(b, qdata);
-    ntt2normal_order_8l_rvv(b, qdata);
+    ntt_ref(a);
+    ntt_rvv_vlen128(b, qdata_vlen128);
+    ntt2normal_order_rvv_vlen128(b, qdata_vlen128);
     if (poly_equal(a, b, N) == 0) {
-        printf("ntt_8l_rvv error\n");
+        printf("ntt_rvv_vlen128 error\n");
         print_poly(a, N);
         print_poly(b, N);
     }
@@ -187,11 +187,11 @@ int main()
     //     a[i] = i;
     // for (i = 0; i < N; i++)
     //     b[i] = i;
-    // intt_8l_ref(a);
-    // normal2ntt_order_8l_rvv(b, qdata);
-    // intt_8l_rvv(b, qdata);
+    // intt_ref(a);
+    // normal2ntt_order_rvv_vlen128(b, qdata_vlen128);
+    // intt_rvv_vlen128(b, qdata_vlen128);
     // if (poly_equal(a, b, N) == 0) {
-    //     printf("intt_8l_rvv error\n");
+    //     printf("intt_rvv_vlen128 error\n");
     //     print_poly(a, N);
     //     print_poly(b, N);
     // }
@@ -200,27 +200,27 @@ int main()
     //     a[i] = 1;
     // for (i = 0; i < N; i++)
     //     b[i] = 1;
-    // ntt_8l_ref(a);
-    // ntt_8l_ref(b);
+    // ntt_ref(a);
+    // ntt_ref(b);
     // basemul_8l_ref(c0, a, b);
-    // intt_8l_ref(c0);
+    // intt_ref(c0);
     // for (i = 0; i < N; i++)
     //     a[i] = 1;
     // for (i = 0; i < N; i++)
     //     b[i] = 1;
-    // ntt_8l_rvv(a, qdata);
-    // ntt_8l_rvv(b, qdata);
-    // poly_basemul_8l_rvv(c1, a, b);
-    // intt_8l_rvv(c1, qdata);
+    // ntt_rvv_vlen128(a, qdata_vlen128);
+    // ntt_rvv_vlen128(b, qdata_vlen128);
+    // poly_basemul_rvv_vlen128(c1, a, b);
+    // intt_rvv_vlen128(c1, qdata_vlen128);
     // if (poly_equal(c0, c1, N) == 0) {
     //     printf("ntt-basemul-intt 8l rvv error\n");
     //     print_poly(c0, N);
     //     print_poly(c1, N);
     // }
 
-    // poly_reduce_rvv(c1);
+    // poly_reduce_rvv_vlen128(c1);
     // if (poly_equal(c0, c1, N) == 0) {
-    //     printf("poly_reduce_rvv error\n");
+    //     printf("poly_reduce_rvv_vlen128 error\n");
     //     print_poly(c0, N);
     //     print_poly(c1, N);
     // }
@@ -229,31 +229,31 @@ int main()
     //     a[i] = 2;
     // for (i = 0; i < N; i++)
     //     b[i] = 1;
-    // ntt_8l_ref(a);
-    // ntt_8l_ref(b);
+    // ntt_ref(a);
+    // ntt_ref(b);
     // basemul_8l_ref(c0, a, b);
-    // intt_8l_ref(c0);
+    // intt_ref(c0);
     // for (i = 0; i < N; i++)
     //     a[i] = 1;
     // for (i = 0; i < N; i++)
     //     b[i] = 1;
-    // ntt_8l_rvv(a, qdata);
-    // ntt_8l_rvv(b, qdata);
-    // poly_basemul_8l_rvv(c1, a, b);
-    // poly_basemul_acc_8l_rvv(c1, a, b);
-    // intt_8l_rvv(c1, qdata);
+    // ntt_rvv_vlen128(a, qdata_vlen128);
+    // ntt_rvv_vlen128(b, qdata_vlen128);
+    // poly_basemul_rvv_vlen128(c1, a, b);
+    // poly_basemul_acc_rvv_vlen128(c1, a, b);
+    // intt_rvv_vlen128(c1, qdata_vlen128);
     // if (poly_equal(c0, c1, N) == 0) {
     //     printf("ntt-basemul-acc-intt 8l rvv error\n");
     //     print_poly(c0, N);
     //     print_poly(c1, N);
     // }
 
-    PERF(ntt_8l_rvv(b, qdata), ntt_8l_rvv);
-    PERF(intt_8l_rvv(b, qdata), intt_8l_rvv);
-    PERF(poly_basemul_8l_rvv(c1, a, b), poly_basemul_8l_rvv);
-    PERF(poly_basemul_acc_8l_rvv(c1, a, b), poly_basemul_acc_8l_rvv);
-    PERF(poly_reduce_rvv(c1), poly_reduce_rvv);
-    PERF(ntt2normal_order_8l_rvv(b, qdata), ntt2normal_order_8l_rvv);
-    PERF(normal2ntt_order_8l_rvv(b, qdata), normal2ntt_order_8l_rvv);
+    PERF(ntt_rvv_vlen128(b, qdata_vlen128), ntt_rvv_vlen128);
+    PERF(intt_rvv_vlen128(b, qdata_vlen128), intt_rvv_vlen128);
+    PERF(poly_basemul_rvv_vlen128(c1, a, b), poly_basemul_rvv_vlen128);
+    PERF(poly_basemul_acc_rvv_vlen128(c1, a, b), poly_basemul_acc_rvv_vlen128);
+    PERF(poly_reduce_rvv_vlen128(c1), poly_reduce_rvv_vlen128);
+    PERF(ntt2normal_order_rvv_vlen128(b, qdata_vlen128), ntt2normal_order_rvv_vlen128);
+    PERF(normal2ntt_order_rvv_vlen128(b, qdata_vlen128), normal2ntt_order_rvv_vlen128);
     return 0;
 }

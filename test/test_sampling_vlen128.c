@@ -139,12 +139,12 @@ static void cbd3(int16_t *r, const uint8_t buf[3 * KYBER_N / 4])
     }
 }
 
-extern const int16_t qdata[1472];
-extern int16_t *rej_uniform_rvv(int16_t *r, const uint8_t *buf,
+extern const int16_t qdata_vlen128[1472];
+extern int16_t *rej_uniform_rvv_vlen128(int16_t *r, const uint8_t *buf,
                                 const int16_t *table, uint32_t *ctr_p,
                                 uint32_t *pos_p);
-extern void cbd2_rvv(int16_t *r, const uint8_t *buf, const int16_t *table);
-extern void cbd3_rvv(int16_t *r, const uint8_t *buf, const int16_t *table);
+extern void cbd2_rvv_vlen128(int16_t *r, const uint8_t *buf, const int16_t *table);
+extern void cbd3_rvv_vlen128(int16_t *r, const uint8_t *buf, const int16_t *table);
 
 #define NTESTS 1000
 uint64_t t[NTESTS];
@@ -158,36 +158,36 @@ int main()
 
     for (i = 0; i < REJ_UNIFORM_BUFLEN + 32 - 24; i++)
         buf[i] = i;
-    int16_t *p = rej_uniform_rvv(r0, buf, qdata, &ctr, &pos);
+    int16_t *p = rej_uniform_rvv_vlen128(r0, buf, qdata_vlen128, &ctr, &pos);
     printf("ctr is %d\n", ctr);
     rej_uniform(r1, 256, buf, REJ_UNIFORM_BUFLEN);
     if (poly_equal(r0, r1, ctr) != 1) {
-        printf("rej_uniform_rvv\n");
+        printf("rej_uniform_rvv_vlen128\n");
         print_poly(r0, ctr);
         print_poly(r1, ctr);
     }
 
-    cbd2_rvv(r0, buf, qdata);
+    cbd2_rvv_vlen128(r0, buf, qdata_vlen128);
     cbd2(r1, buf);
     if (poly_equal(r0, r1, KYBER_N) != 1) {
-        printf("cbd2_rvv\n");
+        printf("cbd2_rvv_vlen128\n");
         print_poly(r0, KYBER_N);
         print_poly(r1, KYBER_N);
     }
 
-    cbd3_rvv(r0, buf, qdata);
+    cbd3_rvv_vlen128(r0, buf, qdata_vlen128);
     cbd3(r1, buf);
     if (poly_equal(r0, r1, KYBER_N) != 1) {
-        printf("cbd3_rvv\n");
+        printf("cbd3_rvv_vlen128\n");
         print_poly(r0, KYBER_N);
         print_poly(r1, KYBER_N);
     }
 
-    PERF(rej_uniform_rvv(r0, buf, qdata, &ctr, &pos), rej_uniform_rvv);
+    PERF(rej_uniform_rvv_vlen128(r0, buf, qdata_vlen128, &ctr, &pos), rej_uniform_rvv_vlen128);
     PERF(rej_uniform(r0, 256, buf, REJ_UNIFORM_BUFLEN), rej_uniform);
-    PERF(cbd2_rvv(r0, buf, qdata), cbd2_rvv);
+    PERF(cbd2_rvv_vlen128(r0, buf, qdata_vlen128), cbd2_rvv_vlen128);
     PERF(cbd2(r1, buf), cbd2);
-    PERF(cbd3_rvv(r0, buf, qdata), cbd3_rvv);
+    PERF(cbd3_rvv_vlen128(r0, buf, qdata_vlen128), cbd3_rvv_vlen128);
     PERF(cbd3(r1, buf), cbd3);
 
     return 0;

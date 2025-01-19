@@ -9,18 +9,18 @@
 
 void ntt(int32_t a[N])
 {
-    ntt_8l_rvv(a, qdata);
+    ntt_rvv_vlen128(a, qdata_vlen128);
 }
 
 void intt(int32_t a[N])
 {
-    intt_8l_rvv(a, qdata);
+    intt_rvv_vlen128(a, qdata_vlen128);
 }
 
 #elif defined(RV64)
 
 // RV64IM assembly optimized implementation with Plantard arithmetic
-const int64_t zetas_ntt_8l_rv64im[N] = {
+const int64_t zetas_ntt_rv64im[N] = {
     -7863079302046539641, 8288750859434465317,  8279739258909364132,
     -7047040794213066873, -6347578587163640001, -6924180145725268195,
     -7046899919168219175, -1324408118892148702, 7797620831989026436,
@@ -108,7 +108,7 @@ const int64_t zetas_ntt_8l_rv64im[N] = {
     -1721041807660842613, 2321088055326733809,  -1610012461767674828,
 };
 
-const int64_t zetas_intt_8l_rv64im[N] = {
+const int64_t zetas_intt_rv64im[N] = {
     1610012461767674828,  -2321088055326733809, 1721041807660842613,
     -4182342354889975161, 8306633185439819991,  8748527384710988398,
     -7772844433476437538, 666966296313699269,   -3839960966595675222,
@@ -199,12 +199,12 @@ const int64_t zetas_intt_8l_rv64im[N] = {
 
 void ntt(int32_t a[N])
 {
-    ntt_8l_rv64im(a, zetas_ntt_8l_rv64im);
+    ntt_rv64im(a, zetas_ntt_rv64im);
 }
 
 void intt(int32_t a[N])
 {
-    intt_8l_rv64im(a, zetas_intt_8l_rv64im);
+    intt_rv64im(a, zetas_intt_rv64im);
 }
 
 #else

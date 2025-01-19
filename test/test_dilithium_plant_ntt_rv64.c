@@ -52,7 +52,7 @@ const int32_t zetas_8l_ref[N] = {
     -976891,  1612842,  -3545687, -554416,  3919660,  -48306,   -1362209,
     3937738,  1400424,  -846154,  1976782};
 
-const int64_t zetas_ntt_8l_rv64im[N] = {
+const int64_t zetas_ntt_rv64im[N] = {
     -7863079302046539641, 8288750859434465317,  8279739258909364132,
     -7047040794213066873, -6347578587163640001, -6924180145725268195,
     -7046899919168219175, -1324408118892148702, 7797620831989026436,
@@ -140,7 +140,7 @@ const int64_t zetas_ntt_8l_rv64im[N] = {
     -1721041807660842613, 2321088055326733809,  -1610012461767674828,
 };
 
-const int64_t zetas_intt_8l_rv64im[N] = {
+const int64_t zetas_intt_rv64im[N] = {
     1610012461767674828,  -2321088055326733809, 1721041807660842613,
     -4182342354889975161, 8306633185439819991,  8748527384710988398,
     -7772844433476437538, 666966296313699269,   -3839960966595675222,
@@ -238,7 +238,7 @@ int32_t montgomery_reduce(int64_t a)
     return t;
 }
 
-void ntt_8l_ref(int32_t a[N])
+void ntt_ref(int32_t a[N])
 {
     unsigned int len, start, j, k;
     int32_t zeta, t;
@@ -256,7 +256,7 @@ void ntt_8l_ref(int32_t a[N])
     }
 }
 
-void intt_8l_ref(int32_t a[N])
+void intt_ref(int32_t a[N])
 {
     unsigned int start, len, j, k;
     int32_t t, zeta;
@@ -327,8 +327,8 @@ void poly_naivemul(int32_t *c, int32_t *a, int32_t *b)
         c[i] = r[i];
 }
 
-extern void ntt_8l_rv64im(int32_t *r, const int64_t *zetas);
-extern void intt_8l_rv64im(int32_t *r, const int64_t *zetas);
+extern void ntt_rv64im(int32_t *r, const int64_t *zetas);
+extern void intt_rv64im(int32_t *r, const int64_t *zetas);
 void poly_basemul_8l_init_rv64im(int64_t r[256], const int32_t a[256],
                                  const int32_t b[256]);
 void poly_basemul_8l_acc_rv64im(int64_t r[256], const int32_t a[256],
@@ -351,19 +351,19 @@ int main()
         a[i] = 1;
     for (i = 0; i < N; i++)
         b[i] = 1;
-    ntt_8l_ref(a);
-    ntt_8l_ref(b);
+    ntt_ref(a);
+    ntt_ref(b);
     basemul_8l_ref(c0, a, b);
-    intt_8l_ref(c0);
+    intt_ref(c0);
 
     for (i = 0; i < N; i++)
         a[i] = 1;
     for (i = 0; i < N; i++)
         b[i] = 1;
-    ntt_8l_rv64im(a, zetas_ntt_8l_rv64im);
-    ntt_8l_rv64im(b, zetas_ntt_8l_rv64im);
+    ntt_rv64im(a, zetas_ntt_rv64im);
+    ntt_rv64im(b, zetas_ntt_rv64im);
     poly_basemul_8l_rv64im(c1, a, b);
-    intt_8l_rv64im(c1, zetas_intt_8l_rv64im);
+    intt_rv64im(c1, zetas_intt_rv64im);
     if (poly_equal(c0, c1, N) == 0) {
         printf("8l ntt error\n");
         print_poly(c0, N);
@@ -374,29 +374,29 @@ int main()
         a[i] = 3;
     for (i = 0; i < N; i++)
         b[i] = 1;
-    ntt_8l_ref(a);
-    ntt_8l_ref(b);
+    ntt_ref(a);
+    ntt_ref(b);
     basemul_8l_ref(c0, a, b);
-    intt_8l_ref(c0);
+    intt_ref(c0);
 
     for (i = 0; i < N; i++)
         a[i] = 1;
     for (i = 0; i < N; i++)
         b[i] = 1;
-    ntt_8l_rv64im(a, zetas_ntt_8l_rv64im);
-    ntt_8l_rv64im(b, zetas_ntt_8l_rv64im);
+    ntt_rv64im(a, zetas_ntt_rv64im);
+    ntt_rv64im(b, zetas_ntt_rv64im);
     poly_basemul_8l_init_rv64im(c_double, a, b);
     poly_basemul_8l_acc_rv64im(c_double, a, b);
     poly_basemul_8l_acc_end_rv64im(c1, a, b, c_double);
-    intt_8l_rv64im(c1, zetas_intt_8l_rv64im);
+    intt_rv64im(c1, zetas_intt_rv64im);
     if (poly_equal(c0, c1, N) == 0) {
         printf("8l ntt error\n");
         print_poly(c0, N);
         print_poly(c1, N);
     }
 
-    PERF(ntt_8l_rv64im(a, zetas_ntt_8l_rv64im), ntt_8l_rv64im);
-    PERF(intt_8l_rv64im(c1, zetas_intt_8l_rv64im), intt_8l_rv64im);
+    PERF(ntt_rv64im(a, zetas_ntt_rv64im), ntt_rv64im);
+    PERF(intt_rv64im(c1, zetas_intt_rv64im), intt_rv64im);
     PERF(poly_basemul_8l_init_rv64im(c_double, a, b),
          poly_basemul_8l_init_rv64im);
     PERF(poly_basemul_8l_acc_rv64im(c_double, a, b),

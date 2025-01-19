@@ -339,16 +339,16 @@
 # inv256qinv <- low(inv256*qinv)
 .equ inv256qinv, 4286571514
 
-# void ntt_8l_rv32im(int32_t in[256], const int32_t zetas[256*2]);
+# void ntt_rv32im(int32_t in[256], const int32_t zetas[256*2]);
 # register usage:
 # a0-a1: in/out, zetas; a6: q; a1/a2/a3/a4/a5/a7: tmp
 # 4*15(sp), 4*16(sp) for outer/inner loop control
 # 4*17(sp) for saving a1
 # t0-t6,tp: 8 coeffs; s0-s11, gp, ra: 7 zetas & zetas*qinv
 # strategy: 3+3+2 layers merging
-.globl ntt_8l_rv32im
+.globl ntt_rv32im
 .align 2
-ntt_8l_rv32im:
+ntt_rv32im:
     addi sp, sp, -4*18
     save_regs
     li a6, q
@@ -358,7 +358,7 @@ ntt_8l_rv32im:
     addi a4, a0, 32*4
     sw   a4, 4*15(sp)
 # 123 layers merging
-ntt_8l_rv32im_looper_123:
+ntt_rv32im_looper_123:
     load_coeffs 32, a0
     ct_bfu_x4   \
         t0, t4, t1, t5, t2, t6, t3, tp, \
@@ -375,7 +375,7 @@ ntt_8l_rv32im_looper_123:
     store_coeffs 32, a0
     lw  a4, 4*15(sp)
     addi a0, a0, 4
-    bne a4, a0, ntt_8l_rv32im_looper_123
+    bne a4, a0, ntt_rv32im_looper_123
     lw   a1, 4*17(sp)
 # reset a0 & update a1
 addi a0, a0, -32*4
@@ -384,11 +384,11 @@ addi a1, a1, 4*7*2
 addi a5, a1, 8*4*7*2
 sw   a1, 4*17(sp)
 sw   a5, 4*15(sp)
-ntt_8l_rv32im_outer_456:
+ntt_rv32im_outer_456:
     load_zetas_zetasqinv
     addi a4, a0, 4*4
     sw   a4, 4*16(sp)
-    ntt_8l_rv32im_inner_456:
+    ntt_rv32im_inner_456:
         load_coeffs 4, a0
         ct_bfu_x4   \
             t0, t4, t1, t5, t2, t6, t3, tp, \
@@ -405,19 +405,19 @@ ntt_8l_rv32im_outer_456:
         store_coeffs 4, a0
         lw  a4, 4*16(sp)
         addi a0, a0, 4
-        bne a4, a0, ntt_8l_rv32im_inner_456
+        bne a4, a0, ntt_rv32im_inner_456
     addi a0, a0, 32*4-4*4
     lw   a1, 4*17(sp)
     lw   a5, 4*15(sp)
     addi a1, a1, 4*7*2
     sw   a1, 4*17(sp)
-    bne  a5, a1, ntt_8l_rv32im_outer_456
+    bne  a5, a1, ntt_rv32im_outer_456
     # reset a0
     addi a0, a0, -8*32*4
     # 78 layers merging
     addi a4, a0, 32*8*4
     sw   a4, 4*15(sp)
-ntt_8l_rv32im_looper_78:
+ntt_rv32im_looper_78:
     load_coeffs 1, a0
     load_6_zetas_zetasqinv
     ct_bfu_x4 \
@@ -434,26 +434,26 @@ ntt_8l_rv32im_looper_78:
     addi a1, a1, 4*3*2*2
     lw   a4, 4*15(sp)
     sw   a1, 4*17(sp)
-    bne a4, a0, ntt_8l_rv32im_looper_78
+    bne a4, a0, ntt_rv32im_looper_78
     restore_regs
     addi sp, sp, 4*18
     ret
 
-# void intt_8l_rv32im(int32_t in[256], const int32_t zetas[256*2]);
+# void intt_rv32im(int32_t in[256], const int32_t zetas[256*2]);
 # register usage: 
 # a0-a1: in/out, zetas; a6: q; a4: looper control; a2/a3/a5/a7: tmp
 # 4*15(sp) for loop control
 # t0-t6,tp: 8 coeffs; s0-s11, gp, ra: 7 zetas & zetas*qinv
 # strategy: 2+3+3 layers merging
-.globl intt_8l_rv32im
+.globl intt_rv32im
 .align 2
-intt_8l_rv32im:
+intt_rv32im:
     addi sp, sp, -4*16
     save_regs
 li a6, q
 # 12 layers merging
 addi a4, a0, 32*8*4
-intt_8l_rv32im_looper_12:
+intt_rv32im_looper_12:
     load_coeffs 1, a0
     load_6_zetas_zetasqinv
     gs_bfu_x4 \
@@ -467,16 +467,16 @@ intt_8l_rv32im_looper_12:
     store_coeffs 1, a0
     addi a0, a0, 8*4
     addi a1, a1, 4*3*2*2
-    bne a4, a0, intt_8l_rv32im_looper_12
+    bne a4, a0, intt_rv32im_looper_12
     # reset a0
     addi a0, a0, -32*8*4
     # 345 layers merging
     addi a5, a1, 8*4*7*2
     sw   a5, 4*15(sp)
-intt_8l_rv32im_outer_345:
+intt_rv32im_outer_345:
     load_zetas_zetasqinv
     addi a4, a0, 4*4
-    intt_8l_rv32im_inner_345:
+    intt_rv32im_inner_345:
         load_coeffs 4, a0
         gs_bfu_x4 \
             t0, t1, t2, t3, t4, t5, t6, tp, \
@@ -492,17 +492,17 @@ intt_8l_rv32im_outer_345:
             a6, a2, a3, a5, a7
         store_coeffs 4, a0
         addi a0, a0, 4
-        bne a4, a0, intt_8l_rv32im_inner_345
+        bne a4, a0, intt_rv32im_inner_345
     lw   a5, 4*15(sp)
     addi a0, a0, 32*4-4*4
     addi a1, a1, 4*7*2
-    bne a5, a1, intt_8l_rv32im_outer_345
+    bne a5, a1, intt_rv32im_outer_345
     # reset a0
     addi a0, a0, -8*32*4
     # 678 layers merging
     addi a4, a0, 32*4
     load_zetas_zetasqinv
-intt_8l_rv32im_looper_678:
+intt_rv32im_looper_678:
     load_coeffs 32, a0
     gs_bfu_x4 \
         t0, t1, t2, t3, t4, t5, t6, tp, \
@@ -526,7 +526,7 @@ intt_8l_rv32im_looper_678:
     store_coeffs 32, a0
     lw   a4, 4*15(sp)
     addi a0, a0, 4
-    bne a4, a0, intt_8l_rv32im_looper_678
+    bne a4, a0, intt_rv32im_looper_678
     restore_regs
     addi sp, sp, 4*16
     ret

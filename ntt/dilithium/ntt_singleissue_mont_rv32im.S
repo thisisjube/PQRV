@@ -161,14 +161,14 @@
 # q/2
 .equ q_div2, 4190208
 
-# void ntt_8l_rv32im(int32_t in[256], const int32_t zetas[256*2]);
+# void ntt_rv32im(int32_t in[256], const int32_t zetas[256*2]);
 # register usage:
 # a0-a1: in/out, zetas; a6: q; a4/a5: looper control; a2/a3/a7: tmp
 # t0-t6,tp: 8 coeffs; s0-s11, gp, ra: 7 zetas + 7 zetas*qinv
 # strategy: 3+3+2 layers merging
-.globl ntt_8l_rv32im
+.globl ntt_rv32im
 .align 2
-ntt_8l_rv32im:
+ntt_rv32im:
     addi sp, sp, -4*15
     save_regs
     li a6, q
@@ -177,7 +177,7 @@ ntt_8l_rv32im:
     # loop control, a0+32*4=a[32], 32: loop numbers, 4: wordLen
     addi a4, a0, 32*4
 # 123 layers merging
-ntt_8l_rv32im_looper_123:
+ntt_rv32im_looper_123:
     # t0-t6,tp = a[0,32,64,...,224]
     load_coeffs 32, a0
     # level 1
@@ -198,18 +198,18 @@ ntt_8l_rv32im_looper_123:
     //save results
     store_coeffs 32, a0
     addi a0, a0, 4
-    bne a4, a0, ntt_8l_rv32im_looper_123
+    bne a4, a0, ntt_rv32im_looper_123
     # reset a0
     addi a0, a0, -32*4
     addi a1, a1, 4*7*2
     # 456 layers merging
     # outer loop control
     addi a5, a1, 8*4*7*2
-ntt_8l_rv32im_outer_456:
+ntt_rv32im_outer_456:
     load_zetas_zetasqinv
     # inner loop control
     addi a4, a0, 4*4
-    ntt_8l_rv32im_inner_456:
+    ntt_rv32im_inner_456:
         load_coeffs 4, a0
         # level 4
         ct_bfu t0, t4, s0, s1, a6, a2, a3
@@ -229,16 +229,16 @@ ntt_8l_rv32im_outer_456:
         # save results
         store_coeffs 4, a0
         addi a0, a0, 4
-        bne a4, a0, ntt_8l_rv32im_inner_456
+        bne a4, a0, ntt_rv32im_inner_456
     addi a0, a0, 32*4-4*4
     addi a1, a1, 4*7*2
-    bne  a5, a1, ntt_8l_rv32im_outer_456
+    bne  a5, a1, ntt_rv32im_outer_456
     # reset a0
     addi a0, a0, -8*32*4
     # 78 layers merging
     # loop control
     addi a4, a0, 32*8*4
-ntt_8l_rv32im_looper_78:
+ntt_rv32im_looper_78:
     load_coeffs 1, a0
     load_zetas_zetasqinv_78layer
     # level 7 & 8
@@ -253,26 +253,26 @@ ntt_8l_rv32im_looper_78:
     store_coeffs 1, a0
     addi a0, a0, 8*4
     addi a1, a1, 4*3*2*2
-    bne a4, a0, ntt_8l_rv32im_looper_78
+    bne a4, a0, ntt_rv32im_looper_78
     restore_regs
     addi sp, sp, 4*15
     ret
 
-# void intt_8l_rv32im(int32_t in[256], const int32_t zetas[256*2]);
+# void intt_rv32im(int32_t in[256], const int32_t zetas[256*2]);
 # register usage: 
 # a0-a1: in/out, zetas; a6: q; a4/a5: looper control; a2/a3/a7: tmp
 # t0-t6,tp: 8 coeffs; s0-s11, gp, ra: 7 zetas + 7 zetas*qinv
 # strategy: 2+3+3 layers merging
-.globl intt_8l_rv32im
+.globl intt_rv32im
 .align 2
-intt_8l_rv32im:
+intt_rv32im:
     addi sp, sp, -4*15
     save_regs
     li a6, q
     # 12 layers merging
     # loop control
     addi a4, a0, 32*8*4
-intt_8l_rv32im_looper_12:
+intt_rv32im_looper_12:
     load_coeffs 1, a0
     load_zetas_zetasqinv_78layer
     gs_bfu t0, t1, s0, s1, a6, a2, a3
@@ -286,16 +286,16 @@ intt_8l_rv32im_looper_12:
     store_coeffs 1, a0
     addi a0, a0, 8*4
     addi a1, a1, 4*3*2*2
-    bne a4, a0, intt_8l_rv32im_looper_12
+    bne a4, a0, intt_rv32im_looper_12
     # reset a0
     addi a0, a0, -32*8*4
     # 345 layers merging
     # loop control
     addi a5, a1, 8*4*7*2
-intt_8l_rv32im_outer_345:
+intt_rv32im_outer_345:
     load_zetas_zetasqinv
     addi a4, a0, 4*4
-    intt_8l_rv32im_inner_345:
+    intt_rv32im_inner_345:
         load_coeffs 4, a0
         # level 3
         gs_bfu t0, t1, s0, s1, a6, a2, a3
@@ -314,10 +314,10 @@ intt_8l_rv32im_outer_345:
         gs_bfu t3, tp, gp, ra, a6, a2, a3
         store_coeffs 4, a0
         addi a0, a0, 4
-        bne a4, a0, intt_8l_rv32im_inner_345
+        bne a4, a0, intt_rv32im_inner_345
     addi a0, a0, 32*4-4*4
     addi a1, a1, 4*7*2
-    bne a5, a1, intt_8l_rv32im_outer_345
+    bne a5, a1, intt_rv32im_outer_345
     # reset a0
     addi a0, a0, -8*32*4
     # 678 layers merging
@@ -325,7 +325,7 @@ intt_8l_rv32im_outer_345:
     load_zetas_zetasqinv
     li a7, inv256
     li a5, inv256qinv
-intt_8l_rv32im_looper_678:
+intt_rv32im_looper_678:
     load_coeffs 32, a0
     # level 6
     gs_bfu t0, t1, s0, s1, a6, a2, a3
@@ -350,7 +350,7 @@ intt_8l_rv32im_looper_678:
     # save results
     store_coeffs 32, a0
     addi a0, a0, 4
-    bne a4, a0, intt_8l_rv32im_looper_678
+    bne a4, a0, intt_rv32im_looper_678
     restore_regs
     addi sp, sp, 4*15
     ret
@@ -722,16 +722,16 @@ poly_reduce_rv32im_loop:
     bne a3, a0, poly_reduce_rv32im_loop
     ret
 
-# void ntt_8l_rv32im_draft(int32_t in[256], const int32_t zetas[64*2]);
+# void ntt_rv32im_draft(int32_t in[256], const int32_t zetas[64*2]);
 # register usage:
 # a0-a1: in/zetas; a6: q
 # s0-s11, a2-a5: 16 coeffs
 # t0-t6, tp: zetas & zetasqinv
 # gp, a7, ra: tmp
 # 4*15(sp): loop
-# .globl ntt_8l_rv32im_draft
+# .globl ntt_rv32im_draft
 # .align 2
-# ntt_8l_rv32im_draft:
+# ntt_rv32im_draft:
 #     addi sp, sp, -4*16
 #     save_regs
 #     li a6, q
@@ -743,7 +743,7 @@ poly_reduce_rv32im_loop:
 #     lw t2, 2*4(a1); lw t3, 3*4(a1)
 #     lw t4, 4*4(a1); lw t5, 5*4(a1)
 # # layer 1+2+3+4
-# ntt_8l_rv32im_loop1:
+# ntt_rv32im_loop1:
 #     load_coeffs a0, 16, 4
 #     # layer 1
 #     ct_bfu s0, s8,  t0, t1, a6, gp, a7
@@ -796,14 +796,14 @@ poly_reduce_rv32im_loop:
 #     store_coeffs a0, 16, 4
 #     addi a0, a0, 4
 #     lw gp, 4*15(sp)
-#     bne gp, a0, ntt_8l_rv32im_loop1
+#     bne gp, a0, ntt_rv32im_loop1
 #     # restore a0 & update a1
 #     addi a0, a0, -16*4
 #     addi a1, a1, 15*4*2
 # # layer 5+6+7+8
-# ntt_8l_rv32im_loop2:
+# ntt_rv32im_loop2:
 
-#     # bne x, x, ntt_8l_rv32im_loop2
+#     # bne x, x, ntt_rv32im_loop2
 #     restore_regs
 #     addi sp, sp, 4*16
 # ret

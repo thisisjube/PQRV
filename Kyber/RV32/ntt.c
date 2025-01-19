@@ -8,12 +8,12 @@
 #if defined(VECTOR128)
 void ntt(int16_t r[KYBER_N])
 {
-    ntt_rvv(r, qdata);
+    ntt_rvv_vlen128(r, qdata_vlen128);
 }
 
 void intt(int16_t r[KYBER_N])
 {
-    intt_rvv(r, qdata);
+    intt_rvv_vlen128(r, qdata_vlen128);
 }
 #elif defined(RV32)
 // RV32IM assembly optimized implementation with Plantard multiplication

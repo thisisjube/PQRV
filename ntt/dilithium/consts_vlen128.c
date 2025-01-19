@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-const int32_t qdata[] __attribute__((aligned(16))) = {
+const int32_t qdata_vlen128[] __attribute__((aligned(16))) = {
 #define _ZETA_EXP_0TO3_L0 (0 * 2)
     1830765815,  25847,
 #define _ZETA_EXP_0TO3_L1 (_ZETA_EXP_0TO3_L0 + 1 * 2)

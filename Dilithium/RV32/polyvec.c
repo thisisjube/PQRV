@@ -112,7 +112,7 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES])
     }
     for (i = 0; i < K; i++)
         for (j = 0; j < L; j++)
-            normal2ntt_order_8l_rvv(mat[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(mat[i].vec[j].coeffs, qdata_vlen128);
     free(statex2);
 }
 #endif
@@ -170,7 +170,7 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES])
     }
     for (i = 0; i < K; i++)
         for (j = 0; j < L; j++)
-            normal2ntt_order_8l_rvv(mat[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(mat[i].vec[j].coeffs, qdata_vlen128);
     free(statex3);
 }
 #endif
@@ -263,7 +263,7 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES])
     }
     for (i = 0; i < K; i++)
         for (j = 0; j < L; j++)
-            normal2ntt_order_8l_rvv(mat[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(mat[i].vec[j].coeffs, qdata_vlen128);
     free(statex2);
 }
 #endif

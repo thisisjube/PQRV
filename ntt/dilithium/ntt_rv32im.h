@@ -6,8 +6,8 @@
 extern void poly_reduce_rv32im(int32_t in[256]);
 
 // 8-layer NTT implementation
-extern void ntt_8l_rv32im(int32_t *r, int32_t *zetas);
-extern void intt_8l_rv32im(int32_t *r, int32_t *zetas);
+extern void ntt_rv32im(int32_t *r, int32_t *zetas);
+extern void intt_rv32im(int32_t *r, int32_t *zetas);
 extern void poly_basemul_8l_init_rv32im(int64_t r[256],
                                         const int32_t a[256],
                                         const int32_t b[256]);

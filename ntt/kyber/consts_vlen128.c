@@ -2,7 +2,7 @@
 
 #define I16(l, h) (h << 8) | l
 
-const int16_t qdata[] __attribute__((aligned(16))) = {
+const int16_t qdata_vlen128[] __attribute__((aligned(16))) = {
 #define _MASK_45674567
     4,           5,           6,           7,           4,
     5,           6,           7,

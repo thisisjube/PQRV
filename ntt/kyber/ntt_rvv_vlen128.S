@@ -1,4 +1,4 @@
-#include "consts.h"
+#include "consts_vlen128.h"
 
 // shuffle4
 # [a0~a3, a4~a7],[a8~a11, a12~a15] -> 
@@ -530,9 +530,9 @@
     addi a0, a0, 8*16
 .endm
 
-.globl ntt_rvv
+.globl ntt_rvv_vlen128
 .align 2
-ntt_rvv:
+ntt_rvv_vlen128:
     li t0, 3329;    li t1, -3327
     ntt_rvv_level0
     ntt_rvv_level1to6 0, _ZETAS_EXP_1TO6_P0_L1, _ZETAS_EXP_1TO6_P0_L3
@@ -646,9 +646,9 @@ ret
     vse16.v v16, (a4);  vse16.v v24, (a5)
 .endm
 
-.globl intt_rvv
+.globl intt_rvv_vlen128
 .align 2
-intt_rvv:
+intt_rvv_vlen128:
     li t0, 3329;    li t1, -3327;   li a4, 20159
     csrwi vxrm, 0   # round-to-nearest-up (add +0.5 LSB)
     intt_rvv_level0to5 0, _ZETA_EXP_INTT_0TO5_P0_L0
@@ -656,16 +656,16 @@ intt_rvv:
     intt_rvv_level6
 ret
 
-// void poly_basemul_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table);
+// void poly_basemul_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table);
 // (a0b0 + b1 * (a1zeta mod q)) mod q + ((a0b1 + a1b0) mod q)x
-.globl poly_basemul_rvv
+.globl poly_basemul_rvv_vlen128
 .align 2
-poly_basemul_rvv:
+poly_basemul_rvv_vlen128:
     li a7, 32;  li t3, _ZETAS_BASEMUL*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
-poly_basemul_rvv_loop:
+poly_basemul_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -698,18 +698,18 @@ poly_basemul_rvv_loop:
     addi a4, a0, 0;    add a5, a0, a6;  vse16.v v20, (a4); vse16.v v21, (a5)
     add  a4, a4, t5;   add a5, a5, t5;  vse16.v v22, (a4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5
-    bltu a1, t2, poly_basemul_rvv_loop
+    bltu a1, t2, poly_basemul_rvv_vlen128_loop
 ret
 
-// void poly_basemul_acc_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table)
-.globl poly_basemul_acc_rvv
+// void poly_basemul_acc_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table)
+.globl poly_basemul_acc_rvv_vlen128
 .align 2
-poly_basemul_acc_rvv:
+poly_basemul_acc_rvv_vlen128:
     li a7, 32;  li t3, _ZETAS_BASEMUL*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
-poly_basemul_acc_rvv_loop:
+poly_basemul_acc_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -750,18 +750,18 @@ poly_basemul_acc_rvv_loop:
     addi a4, a0, 0;    add a5, a0, a6;  vse16.v v20, (a4); vse16.v v21, (a5)
     add  a4, a4, t5;   add a5, a5, t5;  vse16.v v22, (a4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5
-    bltu a1, t2, poly_basemul_acc_rvv_loop
+    bltu a1, t2, poly_basemul_acc_rvv_vlen128_loop
 ret
 
-// void poly_basemul_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
-.globl poly_basemul_cache_init_rvv
+// void poly_basemul_cache_init_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
+.globl poly_basemul_cache_init_rvv_vlen128
 .align 2
-poly_basemul_cache_init_rvv:
+poly_basemul_cache_init_rvv_vlen128:
     li a7, 32;  li t3, _ZETAS_BASEMUL*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
-poly_basemul_cache_init_rvv_loop:
+poly_basemul_cache_init_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -797,18 +797,18 @@ poly_basemul_cache_init_rvv_loop:
     addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
     add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
-    bltu a1, t2, poly_basemul_cache_init_rvv_loop
+    bltu a1, t2, poly_basemul_cache_init_rvv_vlen128_loop
 ret
 
-// void poly_basemul_acc_cache_init_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
-.globl poly_basemul_acc_cache_init_rvv
+// void poly_basemul_acc_cache_init_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
+.globl poly_basemul_acc_cache_init_rvv_vlen128
 .align 2
-poly_basemul_acc_cache_init_rvv:
+poly_basemul_acc_cache_init_rvv_vlen128:
     li a7, 32;  li t3, _ZETAS_BASEMUL*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  a3, a3, t3; add  t3, a6, a7; addi t2, a1, 256*2
-poly_basemul_acc_cache_init_rvv_loop:
+poly_basemul_acc_cache_init_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -852,18 +852,18 @@ poly_basemul_acc_cache_init_rvv_loop:
     addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
     add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
-    bltu a1, t2, poly_basemul_acc_cache_init_rvv_loop
+    bltu a1, t2, poly_basemul_acc_cache_init_rvv_vlen128_loop
 ret
 
-// void poly_basemul_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
-.globl poly_basemul_cached_rvv
+// void poly_basemul_cached_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
+.globl poly_basemul_cached_rvv_vlen128
 .align 2
-poly_basemul_cached_rvv:
+poly_basemul_cached_rvv_vlen128:
     li a7, 32; addi t2, a1, 256*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  t3, a6, a7
-poly_basemul_cached_rvv_loop:
+poly_basemul_cached_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -894,18 +894,18 @@ poly_basemul_cached_rvv_loop:
     addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
     add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a0, a0, t5;   add a4, a4, t5
-    bltu a1, t2, poly_basemul_cached_rvv_loop
+    bltu a1, t2, poly_basemul_cached_rvv_vlen128_loop
 ret
 
-// void poly_basemul_acc_cached_rvv(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
-.globl poly_basemul_acc_cached_rvv
+// void poly_basemul_acc_cached_rvv_vlen128(int16_t *r, const int16_t *a, const int16_t *b, const int16_t *table, int16_t *b_cache)
+.globl poly_basemul_acc_cached_rvv_vlen128
 .align 2
-poly_basemul_acc_cached_rvv:
+poly_basemul_acc_cached_rvv_vlen128:
     li a7, 32; addi t2, a1, 256*2
     vsetvli a7, a7, e16, m1, tu, mu; li t0, 3329; li t1, -3327
     slli t5, a7, 3;  slli a6, a7, 2;  slli a7, a7, 1
     add  t3, a6, a7
-poly_basemul_acc_cached_rvv_loop:
+poly_basemul_acc_cached_rvv_vlen128_loop:
     vle16.v v0, (a1); vle16.v v8,  (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v4, (a1); vle16.v v12, (a2); add a1, a1, a7; add a2, a2, a7
     vle16.v v1, (a1); vle16.v v9,  (a2); add a1, a1, a7; add a2, a2, a7
@@ -944,51 +944,51 @@ poly_basemul_acc_cached_rvv_loop:
     addi t4, a0, 0;    add a5, a0, a6;  vse16.v v20, (t4); vse16.v v21, (a5)
     add  t4, t4, t5;   add a5, a5, t5;  vse16.v v22, (t4); vse16.v v23, (a5)
     add  a0, a0, t5;   add a3, a3, t5;  add a0, a0, t5;   add a4, a4, t5
-    bltu a1, t2, poly_basemul_acc_cached_rvv_loop
+    bltu a1, t2, poly_basemul_acc_cached_rvv_vlen128_loop
 ret
 
-.globl poly_reduce_rvv
+.globl poly_reduce_rvv_vlen128
 .align 2
-poly_reduce_rvv:
+poly_reduce_rvv_vlen128:
     li a7, 16*8;    li t0, 3329
     vsetvli a7, a7, e16, m8, tu, mu
     csrwi vxrm, 0   # round-to-nearest-up (add +0.5 LSB)
     li a6, 20159;   add  t4, a0, 256*2  
     slli t3, a7, 2; slli a7, a7, 1
-poly_reduce_rvv_loop:
+poly_reduce_rvv_vlen128_loop:
     add a1, a0, a7
     vle16.v v0,  (a0);  vle16.v v8,  (a1)
     barrettRdc v0, v16, a6, t0
     barrettRdc v8, v24, a6, t0
     vse16.v v0,  (a0);  vse16.v v8,  (a1)
     add  a0, a0, t3
-    bltu a0, t4, poly_reduce_rvv_loop
+    bltu a0, t4, poly_reduce_rvv_vlen128_loop
 ret
 
-.globl poly_tomont_rvv
+.globl poly_tomont_rvv_vlen128
 .align 2
-poly_tomont_rvv:
+poly_tomont_rvv_vlen128:
     li a7, 16*8;    li t0, 3329
     vsetvli a7, a7, e16, m8, tu, mu
     # mont^2 and qinv*mont^2
     li t1, 1353;    li t2, 20553
     slli t3, a7, 2; slli a7, a7, 1
     add  t4, a0, 256*2
-poly_tomont_rvv_loop:
+poly_tomont_rvv_vlen128_loop:
     add a1, a0, a7
     vle16.v v0,  (a0);  vle16.v v8,  (a1)
     montmul_const v16, v0, t1, t2, t0, v24
     montmul_const v24, v8, t1, t2, t0, v0
     vse16.v v16, (a0);  vse16.v v24, (a1)
     add  a0, a0, t3
-    bltu a0, t4, poly_tomont_rvv_loop
+    bltu a0, t4, poly_tomont_rvv_vlen128_loop
 ret
 
-.globl normal2ntt_order_rvv
+.globl normal2ntt_order_rvv_vlen128
 .align 2
-normal2ntt_order_rvv:
+normal2ntt_order_rvv_vlen128:
     li a2, 2
-normal2ntt_order_rvv_loop:
+normal2ntt_order_rvv_vlen128_loop:
     addi a5, a0, 64*2
     vsetivli a7, 8, e16, m1, tu, mu
     vl8re16.v v16, (a0);  vl8re16.v v24, (a5)
@@ -1018,14 +1018,14 @@ normal2ntt_order_rvv_loop:
     vs4r.v v8,  (a0);    addi a0, a0, 8*8*2
     shuffle_o_x2 v12, v13, v14, v15, v25, v27, v29, v31, v1, v1
     vs4r.v v12, (a5);    addi a2, a2, -1
-    bnez a2, normal2ntt_order_rvv_loop
+    bnez a2, normal2ntt_order_rvv_vlen128_loop
 ret
 
-.globl ntt2normal_order_rvv
+.globl ntt2normal_order_rvv_vlen128
 .align 2
-ntt2normal_order_rvv:
+ntt2normal_order_rvv_vlen128:
     li a2, 2
-ntt2normal_order_rvv_loop:
+ntt2normal_order_rvv_vlen128_loop:
     addi a5, a0, 64*2
     vsetivli a7, 8, e16, m1, tu, mu
     vl8re16.v v16, (a0)
@@ -1056,13 +1056,13 @@ ntt2normal_order_rvv_loop:
     shuffle_o_x2 v10, v14, v11, v15, v19, v23, v27, v31, v1, v2
     vs4r.v v8, (a0);    vs4r.v v12, (a5)
     addi a2, a2, -1;    addi a0, a5, 4*8*2
-    bnez a2, ntt2normal_order_rvv_loop
+    bnez a2, ntt2normal_order_rvv_vlen128_loop
 ret
 
-// void rej_uniform_rvv(int16_t *r, const uint8_t *buf, const int16_t *table, uint32_t *ctr_p, uint32_t *pos_p)
-.globl rej_uniform_rvv
+// void rej_uniform_rvv_vlen128(int16_t *r, const uint8_t *buf, const int16_t *table, uint32_t *ctr_p, uint32_t *pos_p)
+.globl rej_uniform_rvv_vlen128
 .align 2
-rej_uniform_rvv:
+rej_uniform_rvv_vlen128:
     li t0, 0xfff;   li t1, 3329
     vsetivli a7, 8, e16, m1, tu, mu
     addi t2, a2, _REJ_UNIFORM_IDX8*2
@@ -1071,42 +1071,42 @@ rej_uniform_rvv:
     vmseq.vi v0, v31, 1
     addi a5, a0, 0; addi a6, a1, 0
 # do...while(ctr <= KYBER_N - 8*4 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12*4)
-rej_uniform_rvv_loop_x4:
+rej_uniform_rvv_vlen128_loop_x4:
     rej_core_x4 v8, v9, v10, v11, v12, v13, v14, v15, \
         v16, v17, v18, v19, v30, t0, t1
     sub  t2, a0, a5;    li  t4, 256-8*4
     srli t2, t2, 1;     sub t3, a1, a6
     li   t5, 504-12*4
-    bgtu t2, t4, rej_uniform_rvv_loopend_x4
-    bleu t3, t5, rej_uniform_rvv_loop_x4
-rej_uniform_rvv_loopend_x4:
+    bgtu t2, t4, rej_uniform_rvv_vlen128_loopend_x4
+    bleu t3, t5, rej_uniform_rvv_vlen128_loop_x4
+rej_uniform_rvv_vlen128_loopend_x4:
 # while(ctr <= KYBER_N - 8*2 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12*2)
-rej_uniform_rvv_loop_x2:
+rej_uniform_rvv_vlen128_loop_x2:
     sub  t2, a0, a5;    li  t4, 256-8*2
     srli t2, t2, 1;     sub t3, a1, a6
     li   t5, 504-12*2
-    bgtu t2, t4, rej_uniform_rvv_loopend_x2
-    bgtu t3, t5, rej_uniform_rvv_loopend_x2
+    bgtu t2, t4, rej_uniform_rvv_vlen128_loopend_x2
+    bgtu t3, t5, rej_uniform_rvv_vlen128_loopend_x2
     rej_core_x2 v8, v9, v12, v13, v16, v17, v30, t0, t1
-    j rej_uniform_rvv_loop_x2
-rej_uniform_rvv_loopend_x2:
+    j rej_uniform_rvv_vlen128_loop_x2
+rej_uniform_rvv_vlen128_loopend_x2:
 # while(ctr <= KYBER_N - 8 && pos <= REJ_UNIFORM_VECTOR_BUFLEN - 12)
-rej_uniform_rvv_loop_x1:
+rej_uniform_rvv_vlen128_loop_x1:
     sub  t2, a0, a5;    li  t4, 256-8
     srli t2, t2, 1;     sub t3, a1, a6
     li   t5, 504-12
-    bgtu t2, t4, rej_uniform_rvv_loopend_x1
-    bgtu t3, t5, rej_uniform_rvv_loopend_x1
+    bgtu t2, t4, rej_uniform_rvv_vlen128_loopend_x1
+    bgtu t3, t5, rej_uniform_rvv_vlen128_loopend_x1
     rej_core v8, v12, v16, v30, t0, t1
-    j rej_uniform_rvv_loop_x1
-rej_uniform_rvv_loopend_x1:
+    j rej_uniform_rvv_vlen128_loop_x1
+rej_uniform_rvv_vlen128_loopend_x1:
     sw t2, (a3);    sw t3, (a4)
 ret
 
-// void cbd2_rvv(int16_t *r, const uint8_t *buf, const int16_t *table)
-.globl cbd2_rvv
+// void cbd2_rvv_vlen128(int16_t *r, const uint8_t *buf, const int16_t *table)
+.globl cbd2_rvv_vlen128
 .align 2
-cbd2_rvv:
+cbd2_rvv_vlen128:
     li t0, 0x55;    li t1, 0x33
     vsetivli a7, 16, e8, m1, tu, mu
     addi t2, a2, _CBD2_MASK_E8_01*2
@@ -1115,19 +1115,19 @@ cbd2_rvv:
     vle8.v v29, (t2); vle8.v v30, (t3); vle8.v v31, (t4)
     li a4, 2
     vmseq.vi v0, v29, 1
-cbd2_rvv_loop:
+cbd2_rvv_vlen128_loop:
     cbd2_core_x4 v1, v2, v3, v4, v5, v6, v7, v8, \
         v10, v11, v12, v13, v14, v15, v16, v17, \
         v18, v19, v20, v21, v22, v23, v24, v25, \
         v30, v31, t0, t1
     addi a4, a4, -1
-    bnez a4, cbd2_rvv_loop
+    bnez a4, cbd2_rvv_vlen128_loop
 ret
 
-// void cbd3_rvv(int16_t *r, const uint8_t *buf, const int16_t *table)
-.globl cbd3_rvv
+// void cbd3_rvv_vlen128(int16_t *r, const uint8_t *buf, const int16_t *table)
+.globl cbd3_rvv_vlen128
 .align 2
-cbd3_rvv:
+cbd3_rvv_vlen128:
     li t0, 0x249249;    li t1, 0x6DB6DB
     li a3, 0x70000;     li a4, 4
     vsetivli a7, 8, e16, m1, tu, mu
@@ -1138,7 +1138,7 @@ cbd3_rvv:
     vle16.v v28, (t2);  vle16.v v29, (t3)
     vle16.v v30, (t4);  vle16.v v31, (t5)
     vmseq.vi v0, v28, 1
-cbd3_rvv_loop:
+cbd3_rvv_vlen128_loop:
     cbd3_core_x4 \
         v2, v3, v4, v5, v6, v7, \
         v8, v9, v10,v11,v12,v13,\
@@ -1146,5 +1146,5 @@ cbd3_rvv_loop:
         v20,v21,v22,v23,v24,v25,\
         v29, v30, v31, t0, t1, a3
     addi a4, a4, -1
-    bnez a4, cbd3_rvv_loop
+    bnez a4, cbd3_rvv_vlen128_loop
 ret

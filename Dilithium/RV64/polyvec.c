@@ -28,7 +28,7 @@ void polyvec_matrix_expand(polyvecl mat[K], const uint8_t rho[SEEDBYTES])
         for (j = 0; j < L; ++j) {
             poly_uniform(&mat[i].vec[j], rho, (i << 8) + j);
 #if defined(VECTOR128)
-            normal2ntt_order_8l_rvv(mat[i].vec[j].coeffs, qdata);
+            normal2ntt_order_rvv_vlen128(mat[i].vec[j].coeffs, qdata_vlen128);
 #endif
         }
 }

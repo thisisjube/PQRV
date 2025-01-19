@@ -591,9 +591,9 @@
 // s0-s11, a2-a5: 16 coeffs; 
 // 16+2+1+1=20 regs; 
 // 9 twiddle factors: can be preloaded; t0-t6, tp, ra.
-.global ntt_8l_rv64im
+.global ntt_rv64im
 .align 2
-ntt_8l_rv64im:
+ntt_rv64im:
   addi sp, sp, -8*16
   save_regs
   li a6, q32          // q<<32
@@ -608,7 +608,7 @@ ntt_8l_rv64im:
   ld t5, 5*8(a1)
   ld t6, 6*8(a1)
   ### LAYER 1+2+3+4
-  ntt_8l_rv64im_loop1:
+  ntt_rv64im_loop1:
     addi a0, a0, -4
     load_coeffs a0, 16, 4
     // layer 1
@@ -651,12 +651,12 @@ ntt_8l_rv64im:
   ld gp, 8*15(sp)
   addi gp, gp, -1
   sd gp, 8*15(sp)
-  bge gp, zero, ntt_8l_rv64im_loop1
+  bge gp, zero, ntt_rv64im_loop1
   addi a1, a1, 15*8
   ### LAYER 5+6+7+8
   addi gp, x0, 16
   sd gp, 8*15(sp)
-  ntt_8l_rv64im_loop2:
+  ntt_rv64im_loop2:
     load_coeffs a0, 1, 4
     ld t0, 0*8(a1)
     ld t1, 1*8(a1)
@@ -707,7 +707,7 @@ ntt_8l_rv64im:
   ld gp, 8*15(sp)
   addi gp, gp, -1
   sd gp, 8*15(sp)
-  bne gp, zero, ntt_8l_rv64im_loop2
+  bne gp, zero, ntt_rv64im_loop2
   restore_regs
   addi sp, sp, 8*16
   ret
@@ -716,16 +716,16 @@ ntt_8l_rv64im:
 // s0-s11, a2-a5: 16 coeffs; 
 // 16+2+1+1=20 regs; 
 // 8 twiddle factors: can be preloaded; t0-t6, tp; ra: tmp zeta.
-.global intt_8l_rv64im
+.global intt_rv64im
 .align 2
-intt_8l_rv64im:
+intt_rv64im:
   addi sp, sp, -8*16
   save_regs
   li a6, q32
   ### LAYER 8+7+6+5
   addi gp, x0, 16
   sd gp, 8*15(sp)
-  intt_8l_rv64im_loop1:
+  intt_rv64im_loop1:
     load_coeffs a0, 1, 4
     ld t0, 0*8(a1)
     ld t1, 1*8(a1)
@@ -776,7 +776,7 @@ intt_8l_rv64im:
   ld gp, 8*15(sp)
   addi gp, gp, -1
   sd gp, 8*15(sp)
-  bne gp, zero, intt_8l_rv64im_loop1
+  bne gp, zero, intt_rv64im_loop1
   addi a0, a0, -256*4
   ### LAYER 4+3+2+1
   ld t0, 0*8(a1)
@@ -789,7 +789,7 @@ intt_8l_rv64im:
   addi a0, a0, 16*4
   addi gp, x0, 15
   sd gp, 8*15(sp)
-  intt_8l_rv64im_loop2:
+  intt_rv64im_loop2:
     addi a0, a0, -4
     load_coeffs a0, 16, 4
     // layer 4
@@ -836,7 +836,7 @@ intt_8l_rv64im:
   ld gp, 8*15(sp)
   addi gp, gp, -1
   sd gp, 8*15(sp)
-  bge gp, zero, intt_8l_rv64im_loop2
+  bge gp, zero, intt_rv64im_loop2
   restore_regs
   addi sp, sp, 8*16
   ret
