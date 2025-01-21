@@ -2,19 +2,48 @@
 
 #include <stdint.h>
 
-#include "ntt_rvv_vlen128.h"
 #include "params.h"
 #include "reduce.h"
 
 #if defined(VECTOR128)
 void ntt(int16_t r[KYBER_N])
 {
-    ntt_rvv_vlen128(r, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        ntt_rvv_vlen128(r, qdata_vlen128);
+    else
+        ntt_rvv_vlen256(r, qdata_vlen256);
 }
 
 void intt(int16_t r[KYBER_N])
 {
-    intt_rvv_vlen128(r, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        intt_rvv_vlen128(r, qdata_vlen128);
+    else
+        intt_rvv_vlen256(r, qdata_vlen256);
+}
+
+void ntt2normal_order_rvv(int16_t *r)
+{
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        ntt2normal_order_rvv_vlen128(r, qdata_vlen128);
+    else
+        ntt2normal_order_rvv_vlen256(r, qdata_vlen256);
+}
+
+void normal2ntt_order_rvv(int16_t *r)
+{
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        normal2ntt_order_rvv_vlen128(r, qdata_vlen128);
+    else
+        normal2ntt_order_rvv_vlen256(r, qdata_vlen256);
 }
 #elif defined(RV64)
 // RV64IM assembly optimized implementation with Plantard multiplication

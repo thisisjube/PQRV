@@ -62,12 +62,13 @@ void poly_compress(uint8_t r[KYBER_POLYCOMPRESSEDBYTES], const poly *a)
 /*************************************************
  * Name:        poly_decompress
  *
- * Description: De-serialization and subsequent decompression of a polynomial;
- *              approximate inverse of poly_compress
+ * Description: De-serialization and subsequent decompression of a
+ *polynomial; approximate inverse of poly_compress
  *
  * Arguments:   - poly *r: pointer to output polynomial
  *              - const uint8_t *a: pointer to input byte array
- *                                  (of length KYBER_POLYCOMPRESSEDBYTES bytes)
+ *                                  (of length KYBER_POLYCOMPRESSEDBYTES
+ *bytes)
  **************************************************/
 void poly_decompress(poly *r, const uint8_t a[KYBER_POLYCOMPRESSEDBYTES])
 {
@@ -75,8 +76,10 @@ void poly_decompress(poly *r, const uint8_t a[KYBER_POLYCOMPRESSEDBYTES])
 
 #if (KYBER_POLYCOMPRESSEDBYTES == 128)
     for (i = 0; i < KYBER_N / 2; i++) {
-        r->coeffs[2 * i + 0] = (((uint16_t)(a[0] & 15) * KYBER_Q) + 8) >> 4;
-        r->coeffs[2 * i + 1] = (((uint16_t)(a[0] >> 4) * KYBER_Q) + 8) >> 4;
+        r->coeffs[2 * i + 0] =
+            (((uint16_t)(a[0] & 15) * KYBER_Q) + 8) >> 4;
+        r->coeffs[2 * i + 1] =
+            (((uint16_t)(a[0] >> 4) * KYBER_Q) + 8) >> 4;
         a += 1;
     }
 #elif (KYBER_POLYCOMPRESSEDBYTES == 160)
@@ -94,7 +97,8 @@ void poly_decompress(poly *r, const uint8_t a[KYBER_POLYCOMPRESSEDBYTES])
         a += 5;
 
         for (j = 0; j < 8; j++)
-            r->coeffs[8 * i + j] = ((uint32_t)(t[j] & 31) * KYBER_Q + 16) >> 5;
+            r->coeffs[8 * i + j] =
+                ((uint32_t)(t[j] & 31) * KYBER_Q + 16) >> 5;
     }
 #else
 #    error "KYBER_POLYCOMPRESSEDBYTES needs to be in {128, 160}"
@@ -150,7 +154,7 @@ void poly_frombytes(poly *r, const uint8_t a[KYBER_POLYBYTES])
             ((a[3 * i + 1] >> 4) | ((uint16_t)a[3 * i + 2] << 4)) & 0xFFF;
     }
 #if defined(VECTOR128)
-    normal2ntt_order_rvv_vlen128(r->coeffs, qdata_vlen128);
+    normal2ntt_order_rvv(r->coeffs);
 #endif
 }
 
@@ -206,8 +210,8 @@ void poly_tomsg(uint8_t msg[KYBER_INDCPA_MSGBYTES], const poly *a)
 /*************************************************
  * Name:        poly_getnoise_eta1
  *
- * Description: Sample a polynomial deterministically from a seed and a nonce,
- *              with output polynomial close to centered binomial distribution
+ * Description: Sample a polynomial deterministically from a seed and a
+ *nonce, with output polynomial close to centered binomial distribution
  *              with parameter KYBER_ETA1
  *
  * Arguments:   - poly *r: pointer to output polynomial
@@ -226,8 +230,8 @@ void poly_getnoise_eta1(poly *r, const uint8_t seed[KYBER_SYMBYTES],
 /*************************************************
  * Name:        poly_getnoise_eta2
  *
- * Description: Sample a polynomial deterministically from a seed and a nonce,
- *              with output polynomial close to centered binomial distribution
+ * Description: Sample a polynomial deterministically from a seed and a
+ *nonce, with output polynomial close to centered binomial distribution
  *              with parameter KYBER_ETA2
  *
  * Arguments:   - poly *r: pointer to output polynomial
@@ -293,10 +297,9 @@ void poly_ntt(poly *r)
 /*************************************************
  * Name:        poly_intt
  *
- * Description: Computes inverse of negacyclic number-theoretic transform (NTT)
- *              of a polynomial in place;
- *              inputs assumed to be in bitreversed order, output in normal
- *order
+ * Description: Computes inverse of negacyclic number-theoretic transform
+ *(NTT) of a polynomial in place; inputs assumed to be in bitreversed
+ *order, output in normal order
  *
  * Arguments:   - uint16_t *a: pointer to in/output polynomial
  **************************************************/
@@ -309,50 +312,104 @@ void poly_intt(poly *r)
 
 void poly_basemul(poly *r, const poly *a, const poly *b)
 {
-    poly_basemul_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs,
+                                 qdata_vlen128);
+    else
+        poly_basemul_rvv_vlen256(r->coeffs, a->coeffs, b->coeffs,
+                                 qdata_vlen256);
 }
 
 void poly_basemul_acc(poly *r, const poly *a, const poly *b)
 {
-    poly_basemul_acc_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_acc_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs,
+                                     qdata_vlen128);
+    else
+        poly_basemul_acc_rvv_vlen256(r->coeffs, a->coeffs, b->coeffs,
+                                     qdata_vlen256);
 }
 
 void poly_basemul_cache_init(poly *r, const poly *a, const poly *b,
                              poly_half *b_cache)
 {
-    poly_basemul_cache_init_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
-                                b_cache->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_cache_init_rvv_vlen128(r->coeffs, a->coeffs,
+                                            b->coeffs, qdata_vlen128,
+                                            b_cache->coeffs);
+    else
+        poly_basemul_cache_init_rvv_vlen256(r->coeffs, a->coeffs,
+                                            b->coeffs, qdata_vlen256,
+                                            b_cache->coeffs);
 }
 
 void poly_basemul_acc_cache_init(poly *r, const poly *a, const poly *b,
                                  poly_half *b_cache)
 {
-    poly_basemul_acc_cache_init_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
-                                    b_cache->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_acc_cache_init_rvv_vlen128(r->coeffs, a->coeffs,
+                                                b->coeffs, qdata_vlen128,
+                                                b_cache->coeffs);
+    else
+        poly_basemul_acc_cache_init_rvv_vlen256(r->coeffs, a->coeffs,
+                                                b->coeffs, qdata_vlen256,
+                                                b_cache->coeffs);
 }
 
 void poly_basemul_cached(poly *r, const poly *a, const poly *b,
                          poly_half *b_cache)
 {
-    poly_basemul_cached_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
-                            b_cache->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_cached_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs,
+                                        qdata_vlen128, b_cache->coeffs);
+    else
+        poly_basemul_cached_rvv_vlen256(r->coeffs, a->coeffs, b->coeffs,
+                                        qdata_vlen256, b_cache->coeffs);
 }
 
 void poly_basemul_acc_cached(poly *r, const poly *a, const poly *b,
                              poly_half *b_cache)
 {
-    poly_basemul_acc_cached_rvv_vlen128(r->coeffs, a->coeffs, b->coeffs, qdata_vlen128,
-                                b_cache->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_basemul_acc_cached_rvv_vlen128(r->coeffs, a->coeffs,
+                                            b->coeffs, qdata_vlen128,
+                                            b_cache->coeffs);
+    else
+        poly_basemul_acc_cached_rvv_vlen256(r->coeffs, a->coeffs,
+                                            b->coeffs, qdata_vlen256,
+                                            b_cache->coeffs);
 }
 
 void poly_tomont(poly *r)
 {
-    poly_tomont_rvv_vlen128(r->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_tomont_rvv_vlen128(r->coeffs);
+    else
+        poly_tomont_rvv_vlen256(r->coeffs);
 }
 
 void poly_reduce(poly *r)
 {
-    poly_reduce_rvv_vlen128(r->coeffs);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        poly_reduce_rvv_vlen128(r->coeffs);
+    else
+        poly_reduce_rvv_vlen256(r->coeffs);
 }
 
 #elif defined(RV64)
@@ -366,19 +423,21 @@ void poly_basemul_cache_init(poly_double *r, const poly *a, const poly *b,
                                    b_cache->coeffs, zetas_basemul_rv64im);
 }
 
-void poly_basemul_acc_cache_init(poly_double *r, const poly *a, const poly *b,
-                                 poly_half *b_cache)
+void poly_basemul_acc_cache_init(poly_double *r, const poly *a,
+                                 const poly *b, poly_half *b_cache)
 {
     poly_basemul_acc_cache_init_rv64im(r->coeffs, a->coeffs, b->coeffs,
-                                       b_cache->coeffs, zetas_basemul_rv64im);
+                                       b_cache->coeffs,
+                                       zetas_basemul_rv64im);
 }
 
 void poly_basemul_acc_cache_init_end(poly *r, const poly *a, const poly *b,
-                                     poly_half *b_cache, poly_double *r_double)
+                                     poly_half *b_cache,
+                                     poly_double *r_double)
 {
     poly_basemul_acc_cache_init_end_rv64im(
-        r->coeffs, a->coeffs, b->coeffs, b_cache->coeffs, zetas_basemul_rv64im,
-        r_double->coeffs);
+        r->coeffs, a->coeffs, b->coeffs, b_cache->coeffs,
+        zetas_basemul_rv64im, r_double->coeffs);
 }
 
 void poly_basemul_acc_cached(poly_double *r, const poly *a, const poly *b,
@@ -413,18 +472,10 @@ void poly_toplant(poly *r)
     poly_toplant_rv64im(r->coeffs);
 }
 
-// TODO
 void poly_reduce(poly *r)
 {
     poly_plantard_rdc_rv64im(r->coeffs);
 }
-
-// void poly_reduce(poly *r)
-// {
-//     unsigned int i;
-//     for (i = 0; i < KYBER_N; i++)
-//         r->coeffs[i] = barrett_reduce(r->coeffs[i]);
-// }
 
 #else
 

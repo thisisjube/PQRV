@@ -106,6 +106,14 @@ cpi_mulh:
 .endr
 ret
 
+.globl cpi_mulh_x1
+.align 2
+cpi_mulh_x1:
+.rep 1600
+    mulh a0, a0, a0
+.endr
+ret
+
 #ifdef RV64
 .globl cpi_mulw
 .align 2
@@ -216,7 +224,7 @@ ret
 cpi_ld_addi:
 .rep 200
     ld a1, 8*0(a0)
-    ld a2, 8*1(a0)
+    ld a2, 8*2(a0)
     addi a1, a1, 1
     addi a2, a2, 1
     addi a1, a1, 1

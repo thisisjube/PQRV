@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "ntt_rvv_vlen128.h"
+#include "ntt.h"
 #include "params.h"
 
 /*************************************************
@@ -18,7 +18,12 @@
 #if defined(VECTOR128)
 static void cbd2(poly *r, const uint8_t buf[2 * KYBER_N / 4])
 {
-    cbd2_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        cbd2_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
+    else
+        cbd2_rvv_vlen256(r->coeffs, buf, qdata_vlen256);
 }
 #else
 /*************************************************
@@ -76,7 +81,12 @@ static void cbd2(poly *r, const uint8_t buf[2 * KYBER_N / 4])
 #    if defined(VECTOR128)
 static void cbd3(poly *r, const uint8_t buf[3 * KYBER_N / 4])
 {
-    cbd3_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    if (vl == 8)
+        cbd3_rvv_vlen128(r->coeffs, buf, qdata_vlen128);
+    else
+        cbd3_rvv_vlen256(r->coeffs, buf, qdata_vlen256);
 }
 #    else
 /*************************************************

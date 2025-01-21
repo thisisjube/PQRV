@@ -36,19 +36,19 @@ all: \
 run_all: run_rv32imb run_rv64imb run_rvv run_rv_vgroup run_ntt_rv32imv
 
 run_rv32imb: out/scp_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv32imb" > cpi_rv32imb.txt
+	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv32imb" > cpi_rv32imb_c908.txt
 
 run_rv64imb: out/scp_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv64imb" > cpi_rv64imb.txt
+	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv64imb" > cpi_rv64imb_c908.txt
 
 run_rvv: out/scp_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rvv" > cpi_rvv.txt
+	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rvv" > cpi_rvv_c908.txt
 
 run_rv_vgroup: out/scp_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv_vgroup" > cpi_rv_vgroup.txt
+	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_rv_vgroup" > cpi_rv_vgroup_c908.txt
 
 run_ntt_rv32imv: out/scp_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_ntt_rv32imv" > cpi_ntt_rv32imv.txt
+	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./cpi_ntt_rv32imv" > cpi_ntt_rv32imv_c908.txt
 
 out/scp_speed:	\
 	out/cpi_rv32imb out/cpi_rv64imb out/cpi_rvv	\

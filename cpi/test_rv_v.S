@@ -1,13 +1,19 @@
 .globl init_vector_e16
 .align 2
 init_vector_e16:
-    vsetivli a0, 8, e16, m1, tu, mu
+    vsetivli a0, 16, e16, m1, tu, mu
 ret
 
 .globl init_vector_e32
 .align 2
 init_vector_e32:
-    vsetivli a0, 4, e32, m1, tu, mu
+    vsetivli a0, 8, e32, m1, tu, mu
+ret
+
+.globl init_vector_e64
+.align 2
+init_vector_e64:
+    vsetivli a0, 4, e64, m1, tu, mu
 ret
 
 .globl cpi_vle16

@@ -1,0 +1,48 @@
+Test speed of Kyber512
+gen_a:                          29683 cycles
+poly_getnoise_eta1:              5093 cycles
+NTT:                              849 cycles
+INVNTT:                           982 cycles
+poly_basemul_acc:                 483 cycles
+poly_basemul_acc_cache_init:      515 cycles
+poly_basemul_cached:              393 cycles
+poly_basemul_acc_cached:          450 cycles
+polyvec_basemul_acc:              911 cycles
+matrix-vector mul:               1829 cycles
+polyvec_basemul_acc_cached:       850 cycles
+kyber_keypair:                  88244 cycles
+kyber_encaps:                  109722 cycles
+kyber_decaps:                  114286 cycles
+
+Test speed of Kyber768
+gen_a:                          66217 cycles
+poly_getnoise_eta1:              3448 cycles
+NTT:                              842 cycles
+INVNTT:                           980 cycles
+poly_basemul_acc:                 507 cycles
+poly_basemul_acc_cache_init:      527 cycles
+poly_basemul_cached:              391 cycles
+poly_basemul_acc_cached:          472 cycles
+polyvec_basemul_acc:             1388 cycles
+matrix-vector mul:               4262 cycles
+polyvec_basemul_acc_cached:      1286 cycles
+kyber_keypair:                 141052 cycles
+kyber_encaps:                  170013 cycles
+kyber_decaps:                  174748 cycles
+
+Test speed of Kyber1024
+gen_a:                         118777 cycles
+poly_getnoise_eta1:              3470 cycles
+NTT:                              854 cycles
+INVNTT:                           982 cycles
+poly_basemul_acc:                 482 cycles
+poly_basemul_acc_cache_init:      516 cycles
+poly_basemul_cached:              392 cycles
+poly_basemul_acc_cached:          451 cycles
+polyvec_basemul_acc:             1873 cycles
+matrix-vector mul:               7287 cycles
+polyvec_basemul_acc_cached:      1757 cycles
+kyber_keypair:                 218326 cycles
+kyber_encaps:                  256110 cycles
+kyber_decaps:                  257497 cycles
+

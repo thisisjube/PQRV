@@ -4,8 +4,9 @@
 
 #include "cpucycles.h"
 
-#ifdef RVV
+#ifdef VECTOR128
 #    include "ntt_rvv_vlen128.h"
+#    include "ntt_rvv_vlen256.h"
 #elif defined(RV32)
 #    include "ntt_rv32im.h"
 #elif defined(RV64)
@@ -108,50 +109,79 @@ int main()
          basemul_acc_cache_end);
     PERF(poly_plantard_rdc_rv64im(r), plantard_rdc);
     PERF(poly_toplant_rv64im(r), toplant);
-#elif defined(KYBER_NTT_RVV_VLEN128_H)
+#elif defined(KYBER_NTT_RVV_VLEN128_H) || defined(KYBER_NTT_RVV_VLEN256_H)
     int16_t r[256], a[256], b[256], b_cache[256];
-    printf(
-        "Kyber 7-layer NTT & Montgomery based & 1+6 layers merging & "
-        "RV32IMV\n");
-    PERF(ntt_rvv_vlen128(r, qdata_vlen128), ntt);
-    PERF(intt_rvv_vlen128(r, qdata_vlen128), intt);
-    PERF(poly_basemul_rvv_vlen128(r, a, b, qdata_vlen128),
-         poly_basemul_rvv_vlen128);
-    PERF(poly_basemul_acc_rvv_vlen128(r, a, b, qdata_vlen128),
-         poly_basemul_acc_rvv_vlen128);
-    PERF(poly_basemul_cache_init_rvv_vlen128(r, a, b, qdata_vlen128,
-                                             b_cache),
-         poly_basemul_cache_init_rvv_vlen128);
-    PERF(poly_basemul_acc_cache_init_rvv_vlen128(r, a, b, qdata_vlen128,
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
+    printf("Kyber 7-layer NTT & Montgomery based & RVV with VLEN%d\n",
+           vl * 16);
+    if (vl == 8) {
+        PERF(ntt_rvv_vlen128(r, qdata_vlen128), ntt);
+        PERF(intt_rvv_vlen128(r, qdata_vlen128), intt);
+        PERF(poly_basemul_rvv_vlen128(r, a, b, qdata_vlen128),
+             poly_basemul);
+        PERF(poly_basemul_acc_rvv_vlen128(r, a, b, qdata_vlen128),
+             poly_basemul_acc);
+        PERF(poly_basemul_cache_init_rvv_vlen128(r, a, b, qdata_vlen128,
                                                  b_cache),
-         poly_basemul_acc_cache_init_rvv_vlen128);
-    PERF(poly_basemul_cached_rvv_vlen128(r, a, b, qdata_vlen128, b_cache),
-         poly_basemul_cached_rvv_vlen128);
-    PERF(poly_basemul_acc_cached_rvv_vlen128(r, a, b, qdata_vlen128,
+             poly_basemul_cache_init);
+        PERF(poly_basemul_acc_cache_init_rvv_vlen128(
+                 r, a, b, qdata_vlen128, b_cache),
+             poly_basemul_acc_cache_init);
+        PERF(poly_basemul_cached_rvv_vlen128(r, a, b, qdata_vlen128,
                                              b_cache),
-         poly_basemul_acc_cached_rvv_vlen128);
-    PERF(poly_reduce_rvv_vlen128(r), poly_reduce_rvv_vlen128);
-    PERF(poly_tomont_rvv_vlen128(r), poly_tomont_rvv_vlen128);
-    PERF(ntt2normal_order_rvv_vlen128(r, qdata_vlen128),
-         ntt2normal_order_rvv_vlen128);
-    PERF(normal2ntt_order_rvv_vlen128(r, qdata_vlen128),
-         normal2ntt_order_rvv_vlen128);
+             poly_basemul_cached);
+        PERF(poly_basemul_acc_cached_rvv_vlen128(r, a, b, qdata_vlen128,
+                                                 b_cache),
+             poly_basemul_acc_cached);
+        PERF(poly_reduce_rvv_vlen128(r), poly_reduce);
+        PERF(poly_tomont_rvv_vlen128(r), poly_tomont);
+        PERF(ntt2normal_order_rvv_vlen128(r, qdata_vlen128),
+             ntt2normal_order);
+        PERF(normal2ntt_order_rvv_vlen128(r, qdata_vlen128),
+             normal2ntt_order);
+    } else {
+        PERF(ntt_rvv_vlen256(r, qdata_vlen256), ntt);
+        PERF(intt_rvv_vlen256(r, qdata_vlen256), intt);
+        PERF(poly_basemul_rvv_vlen256(r, a, b, qdata_vlen256),
+             poly_basemul);
+        PERF(poly_basemul_acc_rvv_vlen256(r, a, b, qdata_vlen256),
+             poly_basemul_acc);
+        PERF(poly_basemul_cache_init_rvv_vlen256(r, a, b, qdata_vlen256,
+                                                 b_cache),
+             poly_basemul_cache_init);
+        PERF(poly_basemul_acc_cache_init_rvv_vlen256(
+                 r, a, b, qdata_vlen256, b_cache),
+             poly_basemul_acc_cache_init);
+        PERF(poly_basemul_cached_rvv_vlen256(r, a, b, qdata_vlen256,
+                                             b_cache),
+             poly_basemul_cached);
+        PERF(poly_basemul_acc_cached_rvv_vlen256(r, a, b, qdata_vlen256,
+                                                 b_cache),
+             poly_basemul_acc_cached);
+        PERF(poly_reduce_rvv_vlen256(r), poly_reduce);
+        PERF(poly_tomont_rvv_vlen256(r), poly_tomont);
+        PERF(ntt2normal_order_rvv_vlen256(r, qdata_vlen256),
+             ntt2normal_order);
+        PERF(normal2ntt_order_rvv_vlen256(r, qdata_vlen256),
+             normal2ntt_order);
+    }
 #elif defined(DILITHIUM_NTT_RVV_VLEN128_H)
     int32_t r[256], a[256], b[256];
+    int vl;
+    asm volatile("vsetvli %0, x0, e16, m1, tu, mu\n\t" : "=r"(vl));
     printf(
         "Dilithium 8-layer NTT & Montgomery based & 3+3+2 layers merging "
         "& "
-        "RV32IMV\n");
-    PERF(ntt_rvv_vlen128(r, qdata_vlen128), ntt_rvv_vlen128);
-    PERF(intt_rvv_vlen128(r, qdata_vlen128), intt_rvv_vlen128);
-    PERF(poly_basemul_rvv_vlen128(r, a, b), poly_basemul_rvv_vlen128);
-    PERF(poly_basemul_acc_rvv_vlen128(r, a, b),
-         poly_basemul_acc_rvv_vlen128);
-    PERF(ntt2normal_order_rvv_vlen128(r, qdata_vlen128),
-         ntt2normal_order_rvv_vlen128);
-    PERF(normal2ntt_order_rvv_vlen128(r, qdata_vlen128),
-         normal2ntt_order_rvv_vlen128);
-    PERF(poly_reduce_rvv_vlen128(r), poly_reduce_rvv_vlen128);
+        "RVV with VLEN%d\n",
+        vl * 16);
+    PERF(ntt_rvv_vlen128(r, qdata_vlen128), ntt);
+    PERF(intt_rvv_vlen128(r, qdata_vlen128), intt);
+    PERF(poly_basemul_rvv_vlen128(r, a, b), poly_basemul);
+    PERF(poly_basemul_acc_rvv_vlen128(r, a, b), poly_basemul_acc);
+    PERF(ntt2normal_order_rvv_vlen128(r, qdata_vlen128), ntt2normal_order);
+    PERF(normal2ntt_order_rvv_vlen128(r, qdata_vlen128), normal2ntt_order);
+    PERF(poly_reduce_rvv_vlen128(r), poly_reduce);
 #endif
 
     return 0;

@@ -1,9 +1,5 @@
-PLATFORM ?= C908
-
-CC 		= riscv64-unknown-linux-gnu-gcc
-OBJDUMP = riscv64-unknown-linux-gnu-objdump
-SCP 	= scp
-# SCP		= @:
+CC 		= gcc
+OBJDUMP = objdump
 
 COMMONDIR 		= ../../common
 KECCAKDIR		= ../../sha3
@@ -13,13 +9,10 @@ CFLAGS_COMMON 	= -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls
 			  	  -Wshadow -Wpointer-arith -O3 -fomit-frame-pointer -static \
 				  -DRV64=1 -I$(COMMONDIR) -I$(KECCAKDIR) -I$(NTTDIR) -I.
 
-CFLAGS_RV64IM 	= $(CFLAGS_COMMON) -march=rv64imac -mabi=lp64
-CFLAGS_RV64IMB 	= $(CFLAGS_COMMON) -march=rv64imac_zba_zbb -mabi=lp64
-CFLAGS_RV64IMV 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64 -DVECTOR128
-CFLAGS_RV64IMBV = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64 -DVECTOR128
-TARGET_IP = 192.168.123.99
-TARGET_USER = root
-TARGET_DIR  = /sharefs
+CFLAGS_RV64IM 	= $(CFLAGS_COMMON) -march=rv64imafdc -mabi=lp64d
+CFLAGS_RV64IMB 	= $(CFLAGS_COMMON) -march=rv64imafdc_zba_zbb -mabi=lp64d
+CFLAGS_RV64IMV 	= $(CFLAGS_COMMON) -march=rv64imafdcv -mabi=lp64d -DVECTOR128
+CFLAGS_RV64IMBV = $(CFLAGS_COMMON) -march=rv64imafdcv_zba_zbb -mabi=lp64d -DVECTOR128
 
 RM = /bin/rm
 
@@ -55,8 +48,7 @@ all: \
 	out/test_kyber512_rv64imbv  \
 	out/test_kyber768_rv64imbv 	out/test_kyber1024_rv64imbv  \
 	out/test_vectors512_rv64imbv\
-    out/test_vectors768_rv64imbv out/test_vectors1024_rv64imbv\
-	out/scp_test
+    out/test_vectors768_rv64imbv out/test_vectors1024_rv64imbv
 	
 speed: \
 	out/test_speed512_rv64im 		\
@@ -66,28 +58,35 @@ speed: \
 	out/test_speed512_rv64imv		\
 	out/test_speed768_rv64imv   	out/test_speed1024_rv64imv		\
 	out/test_speed512_rv64imbv		\
-	out/test_speed768_rv64imbv   	out/test_speed1024_rv64imbv		\
-	out/scp_test_speed
+	out/test_speed768_rv64imbv   	out/test_speed1024_rv64imbv
 
-run_speed: out/scp_test_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_speed512_rv64im; ./test_speed768_rv64im; ./test_speed1024_rv64im" > results_c908_rv64im.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_speed512_rv64imb; ./test_speed768_rv64imb; ./test_speed1024_rv64imb" > results_c908_rv64imb.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_speed512_rv64imv; ./test_speed768_rv64imv; ./test_speed1024_rv64imv" > results_c908_rv64imv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_speed512_rv64imbv; ./test_speed768_rv64imbv; ./test_speed1024_rv64imbv" > results_c908_rv64imbv.txt
+run_speed: speed
+	perf stat ./out/test_speed512_rv64im > results_x60_rv64im.txt 2>/dev/null
+	perf stat ./out/test_speed768_rv64im >> results_x60_rv64im.txt 2>/dev/null
+	perf stat ./out/test_speed1024_rv64im >> results_x60_rv64im.txt 2>/dev/null
+	perf stat ./out/test_speed512_rv64imb > results_x60_rv64imb.txt 2>/dev/null
+	perf stat ./out/test_speed768_rv64imb >> results_x60_rv64imb.txt 2>/dev/null
+	perf stat ./out/test_speed1024_rv64imb >> results_x60_rv64imb.txt 2>/dev/null
+	perf stat ./out/test_speed512_rv64imv > results_x60_rv64imv.txt 2>/dev/null
+	perf stat ./out/test_speed768_rv64imv >> results_x60_rv64imv.txt 2>/dev/null
+	perf stat ./out/test_speed1024_rv64imv >> results_x60_rv64imv.txt 2>/dev/null
+	perf stat ./out/test_speed512_rv64imbv > results_x60_rv64imbv.txt 2>/dev/null
+	perf stat ./out/test_speed768_rv64imbv >> results_x60_rv64imbv.txt 2>/dev/null
+	perf stat ./out/test_speed1024_rv64imbv >> results_x60_rv64imbv.txt 2>/dev/null
 
-run_diff_vectors: out/scp_test
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors512_rv64im" > vectors_kyber512_rv64im.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors768_rv64im" > vectors_kyber768_rv64im.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors1024_rv64im" > vectors_kyber1024_rv64im.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors512_rv64imb" > vectors_kyber512_rv64imb.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors768_rv64imb" > vectors_kyber768_rv64imb.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors1024_rv64imb" > vectors_kyber1024_rv64imb.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors512_rv64imv" > vectors_kyber512_rv64imv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors768_rv64imv" > vectors_kyber768_rv64imv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors1024_rv64imv" > vectors_kyber1024_rv64imv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors512_rv64imbv" > vectors_kyber512_rv64imbv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors768_rv64imbv" > vectors_kyber768_rv64imbv.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_vectors1024_rv64imbv" > vectors_kyber1024_rv64imbv.txt
+run_diff_vectors: all
+	./out/test_vectors512_rv64im > vectors_kyber512_rv64im.txt
+	./out/test_vectors768_rv64im > vectors_kyber768_rv64im.txt
+	./out/test_vectors1024_rv64im > vectors_kyber1024_rv64im.txt
+	./out/test_vectors512_rv64imb > vectors_kyber512_rv64imb.txt
+	./out/test_vectors768_rv64imb > vectors_kyber768_rv64imb.txt
+	./out/test_vectors1024_rv64imb > vectors_kyber1024_rv64imb.txt
+	./out/test_vectors512_rv64imv > vectors_kyber512_rv64imv.txt
+	./out/test_vectors768_rv64imv > vectors_kyber768_rv64imv.txt
+	./out/test_vectors1024_rv64imv > vectors_kyber1024_rv64imv.txt
+	./out/test_vectors512_rv64imbv > vectors_kyber512_rv64imbv.txt
+	./out/test_vectors768_rv64imbv > vectors_kyber768_rv64imbv.txt
+	./out/test_vectors1024_rv64imbv > vectors_kyber1024_rv64imbv.txt
 	diff vectors_kyber512_rv64im.txt ../ref/vectors_kyber512.txt
 	diff vectors_kyber768_rv64im.txt ../ref/vectors_kyber768.txt
 	diff vectors_kyber1024_rv64im.txt ../ref/vectors_kyber1024.txt
@@ -100,38 +99,6 @@ run_diff_vectors: out/scp_test
 	diff vectors_kyber512_rv64imbv.txt ../ref/vectors_kyber512.txt
 	diff vectors_kyber768_rv64imbv.txt ../ref/vectors_kyber768.txt
 	diff vectors_kyber1024_rv64imbv.txt ../ref/vectors_kyber1024.txt
-
-out/scp_test_speed:	\
-	out/test_speed512_rv64im 		\
-	out/test_speed768_rv64im   		out/test_speed1024_rv64im		\
-	out/test_speed512_rv64imb		\
-	out/test_speed768_rv64imb   	out/test_speed1024_rv64imb		\
-	out/test_speed512_rv64imv		\
-	out/test_speed768_rv64imv   	out/test_speed1024_rv64imv		\
-	out/test_speed512_rv64imbv		\
-	out/test_speed768_rv64imbv   	out/test_speed1024_rv64imbv
-	$(SCP) $^ $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/
-	@echo 1 > $@
-	
-out/scp_test:	\
-	out/test_kyber512_rv64im    \
-	out/test_kyber768_rv64im 	out/test_kyber1024_rv64im   \
-	out/test_vectors512_rv64im 	\
-	out/test_vectors768_rv64im  out/test_vectors1024_rv64im	\
-	out/test_kyber512_rv64imb   \
-	out/test_kyber768_rv64imb 	out/test_kyber1024_rv64imb  \
-	out/test_vectors512_rv64imb \
-    out/test_vectors768_rv64imb out/test_vectors1024_rv64imb\
-	out/test_kyber512_rv64imv   \
-	out/test_kyber768_rv64imv 	out/test_kyber1024_rv64imv  \
-	out/test_vectors512_rv64imv \
-	out/test_vectors768_rv64imv  out/test_vectors1024_rv64imv\
-	out/test_kyber512_rv64imbv  \
-	out/test_kyber768_rv64imbv 	out/test_kyber1024_rv64imbv  \
-	out/test_vectors512_rv64imbv\
-    out/test_vectors768_rv64imbv out/test_vectors1024_rv64imbv
-	$(SCP) $^ $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/
-	@echo 1 > $@
 
 # for RV64IM
 
