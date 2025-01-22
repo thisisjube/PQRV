@@ -72,8 +72,8 @@ speed: \
 	out/scp_test_speed
 
 run_speed: out/scp_test_speed
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64im; ./test_speed2_rv64im; ./test_speed3_rv64im; ./test_speed5_rv64im" > results_rv64im.txt
-	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64imb; ./test_speed2_rv64imb; ./test_speed3_rv64imb; ./test_speed5_rv64imb" > results_rv64imb.txt
+	# ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64im; ./test_speed2_rv64im; ./test_speed3_rv64im; ./test_speed5_rv64im" > results_rv64im.txt
+	# ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64imb; ./test_speed2_rv64imb; ./test_speed3_rv64imb; ./test_speed5_rv64imb" > results_rv64imb.txt
 	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64imv; ./test_speed2_rv64imv; ./test_speed3_rv64imv; ./test_speed5_rv64imv" > results_rv64imv.txt
 	ssh $(TARGET_USER)@$(TARGET_IP) "cd $(TARGET_DIR) && ./test_mul_rv64imbv; ./test_speed2_rv64imbv; ./test_speed3_rv64imbv; ./test_speed5_rv64imbv" > results_rv64imbv.txt
 

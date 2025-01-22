@@ -104,7 +104,7 @@ ntt                            cycles/insts/CPI=7054/8692/0.81
 poly_basemul_init              cycles/insts/CPI=1035/1706/0.61
 poly_basemul_acc               cycles/insts/CPI=1933/3242/0.60
 poly_basemul_acc_end           cycles/insts/CPI=3115/4015/0.78
-poly_basemul                   cycles/insts/CPI=2027/2349/0.86
+poly_basemul                   cycles/insts/CPI=2026/2349/0.86
 poly_reduce                    cycles/insts/CPI=1226/1673/0.73
 intt                           cycles/insts/CPI=7561/9206/0.82
 
@@ -120,10 +120,10 @@ intt                           cycles/insts/CPI=8484/8293/1.02
 
 speed_dualissue_dilithium_mont_ntt_rvv:
 Dilithium 8-layer NTT & Montgomery based & 3+3+2 layers merging & RVV with VLEN128
-ntt                            cycles/insts/CPI=3394/2897/1.17
-intt                           cycles/insts/CPI=3549/3112/1.14
-poly_basemul                   cycles/insts/CPI=670/119/5.63
-poly_basemul_acc               cycles/insts/CPI=824/135/6.10
-ntt2normal_order               cycles/insts/CPI=1103/555/1.99
-normal2ntt_order               cycles/insts/CPI=1103/555/1.99
+ntt                            cycles/insts/CPI=3329/2433/1.37
+intt                           cycles/insts/CPI=3491/2648/1.32
+poly_basemul                   cycles/insts/CPI=666/119/5.60
+poly_basemul_acc               cycles/insts/CPI=815/135/6.04
+ntt2normal_order               cycles/insts/CPI=1040/323/3.22
+normal2ntt_order               cycles/insts/CPI=1040/323/3.22
 poly_reduce                    cycles/insts/CPI=536/83/6.46
