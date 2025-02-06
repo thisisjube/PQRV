@@ -53,3 +53,14 @@ void kyber_shake256_prf(uint8_t *out, size_t outlen,
 
     shake256(out, outlen, extkey, sizeof(extkey));
 }
+
+void kyber_shake256_rkprf(uint8_t out[KYBER_SSBYTES], const uint8_t key[KYBER_SYMBYTES], const uint8_t input[KYBER_CIPHERTEXTBYTES])
+{
+  keccak_state s;
+
+  shake256_init(&s);
+  shake256_absorb(&s, key, KYBER_SYMBYTES);
+  shake256_absorb(&s, input, KYBER_CIPHERTEXTBYTES);
+  shake256_finalize(&s);
+  shake256_squeeze(out, KYBER_SSBYTES, &s);
+}

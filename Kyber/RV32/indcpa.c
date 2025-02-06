@@ -27,14 +27,13 @@
 static void pack_pk(uint8_t r[KYBER_INDCPA_PUBLICKEYBYTES], polyvec *pk,
                     const uint8_t seed[KYBER_SYMBYTES])
 {
-    size_t i;
 #if defined(VECTOR128)
+    size_t i;
     for (i = 0; i < KYBER_K; i++)
         ntt2normal_order_rvv_vlen128(pk->vec[i].coeffs, qdata_vlen128);
 #endif
     polyvec_tobytes(r, pk);
-    for (i = 0; i < KYBER_SYMBYTES; i++)
-        r[i + KYBER_POLYVECBYTES] = seed[i];
+    memcpy(r + KYBER_POLYVECBYTES, seed, KYBER_SYMBYTES);
 }
 
 /*************************************************
@@ -53,10 +52,8 @@ static void pack_pk(uint8_t r[KYBER_INDCPA_PUBLICKEYBYTES], polyvec *pk,
 static void unpack_pk(polyvec *pk, uint8_t seed[KYBER_SYMBYTES],
                       const uint8_t packedpk[KYBER_INDCPA_PUBLICKEYBYTES])
 {
-    size_t i;
     polyvec_frombytes(pk, packedpk);
-    for (i = 0; i < KYBER_SYMBYTES; i++)
-        seed[i] = packedpk[i + KYBER_POLYVECBYTES];
+    memcpy(seed, packedpk + KYBER_POLYVECBYTES, KYBER_SYMBYTES);
 }
 
 /*************************************************
@@ -250,7 +247,8 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs,
+                                         qdata_vlen128);
     free(statex2);
 }
 
@@ -300,7 +298,8 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs,
+                                         qdata_vlen128);
     free(statex4);
 }
 #    endif
@@ -359,7 +358,8 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
     }
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs,
+                                         qdata_vlen128);
     free(statex3);
 }
 #endif
@@ -464,7 +464,8 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
 
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs,
+                                         qdata_vlen128);
 }
 #elif KYBER_K == 4 && defined(RV32IMBV)
 // using 4x 3-way sha3 + 1x 4-way sha3
@@ -564,7 +565,8 @@ void gen_matrix(polyvec *a, const uint8_t seed[32], int transposed)
 
     for (i = 0; i < KYBER_K; i++)
         for (j = 0; j < KYBER_K; j++)
-            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs, qdata_vlen128);
+            normal2ntt_order_rvv_vlen128(a[i].vec[j].coeffs,
+                                         qdata_vlen128);
 }
 #endif
 
@@ -603,18 +605,23 @@ void gen_matrix(polyvec *a, const uint8_t seed[KYBER_SYMBYTES],
 #endif
 
 /*************************************************
-* Name:        indcpa_keypair
-*
-* Description: Generates public and private key for the CPA-secure
-*              public-key encryption scheme underlying Kyber
-*
-* Arguments:   - uint8_t *pk: pointer to output public key
-*                             (of length KYBER_INDCPA_PUBLICKEYBYTES bytes)
-*              - uint8_t *sk: pointer to output private key
-                              (of length KYBER_INDCPA_SECRETKEYBYTES bytes)
-**************************************************/
-void indcpa_keypair(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
-                    uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES])
+ * Name:        indcpa_keypair_derand
+ *
+ * Description: Generates public and private key for the CPA-secure
+ *              public-key encryption scheme underlying Kyber
+ *
+ * Arguments:   - uint8_t *pk: pointer to output public key
+ *                             (of length KYBER_INDCPA_PUBLICKEYBYTES
+ *bytes)
+ *              - uint8_t *sk: pointer to output private key
+ *                             (of length KYBER_INDCPA_SECRETKEYBYTES
+ *bytes)
+ *              - const uint8_t *coins: pointer to input randomness
+ *                             (of length KYBER_SYMBYTES bytes)
+ **************************************************/
+void indcpa_keypair_derand(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
+                           uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES],
+                           const uint8_t coins[KYBER_SYMBYTES])
 {
     unsigned int i;
     uint8_t buf[2 * KYBER_SYMBYTES];
@@ -622,8 +629,9 @@ void indcpa_keypair(uint8_t pk[KYBER_INDCPA_PUBLICKEYBYTES],
     const uint8_t *noiseseed = buf + KYBER_SYMBYTES;
     polyvec a[KYBER_K], e, pkpv, skpv;
 
-    randombytes(buf, KYBER_SYMBYTES);
-    hash_g(buf, buf, KYBER_SYMBYTES);
+    memcpy(buf, coins, KYBER_SYMBYTES);
+    buf[KYBER_SYMBYTES] = KYBER_K;
+    hash_g(buf, buf, KYBER_SYMBYTES + 1);
 
     gen_a(a, publicseed);
 
