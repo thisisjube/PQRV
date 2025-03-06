@@ -159,6 +159,51 @@ cpi_vmulvv_x4:
 .endr
 ret
 
+.globl cpi_vmaccvv
+.align 2
+cpi_vmaccvv:
+.rep 200
+    vmacc.vv v0, v0, v10
+    vmacc.vv v1, v1, v10
+    vmacc.vv v2, v2, v10
+    vmacc.vv v3, v3, v10
+    vmacc.vv v4, v4, v10
+    vmacc.vv v5, v5, v10
+    vmacc.vv v6, v6, v10
+    vmacc.vv v7, v7, v10
+    vmacc.vv v8, v8, v10
+    vmacc.vv v9, v9, v10
+.endr
+ret
+
+.globl cpi_vmaccvv_x1
+.align 2
+cpi_vmaccvv_x1:
+.rep 2000
+    vmacc.vv v0, v0, v0
+.endr
+ret
+
+.globl cpi_vmaccvv_x2
+.align 2
+cpi_vmaccvv_x2:
+.rep 1000
+    vmacc.vv v0, v0, v10
+    vmacc.vv v1, v1, v10
+.endr
+ret
+
+.globl cpi_vmaccvv_x4
+.align 2
+cpi_vmaccvv_x4:
+.rep 500
+    vmacc.vv v0, v0, v10
+    vmacc.vv v1, v1, v10
+    vmacc.vv v2, v2, v10
+    vmacc.vv v3, v3, v10
+.endr
+ret
+
 .globl cpi_vmulhvv
 .align 2
 cpi_vmulhvv:
@@ -949,5 +994,197 @@ cpi_vmergevvm_x4:
     vmerge.vvm v3, v3, v4, v0
     vmerge.vvm v5, v5, v6, v0
     vmerge.vvm v7, v7, v8, v0
+.endr
+ret
+
+.globl init_vector_double_reg
+.align 2
+init_vector_double_reg:
+    vle64.v v0, (a0); vle64.v v1, (a0)
+    vle64.v v2, (a0); vle64.v v3, (a0)
+    vle64.v v4, (a0); vle64.v v5, (a0)
+    vle64.v v6, (a0); vle64.v v7, (a0)
+    vle64.v v8, (a0); vle64.v v9, (a0)
+ret
+
+.globl cpi_vfaddvv
+.align 2
+cpi_vfaddvv:
+.rep 200
+    vfadd.vv v10, v0, v0
+    vfadd.vv v10, v1, v1
+    vfadd.vv v10, v2, v2
+    vfadd.vv v10, v3, v3
+    vfadd.vv v10, v4, v4
+    vfadd.vv v10, v5, v5
+    vfadd.vv v10, v6, v6
+    vfadd.vv v10, v7, v7
+    vfadd.vv v10, v8, v8
+    vfadd.vv v10, v9, v9
+.endr
+ret
+
+.globl cpi_vfaddvv_x1
+.align 2
+cpi_vfaddvv_x1:
+.rep 2000
+    vfadd.vv v0, v0, v0
+.endr
+ret
+
+.globl cpi_vfmulvv
+.align 2
+cpi_vfmulvv:
+.rep 200
+    vfmul.vv v10, v0, v0
+    vfmul.vv v10, v1, v1
+    vfmul.vv v10, v2, v2
+    vfmul.vv v10, v3, v3
+    vfmul.vv v10, v4, v4
+    vfmul.vv v10, v5, v5
+    vfmul.vv v10, v6, v6
+    vfmul.vv v10, v7, v7
+    vfmul.vv v10, v8, v8
+    vfmul.vv v10, v9, v9
+.endr
+ret
+
+.globl cpi_vfmulvv_x1
+.align 2
+cpi_vfmulvv_x1:
+.rep 2000
+    vfmul.vv v0, v0, v0
+.endr
+ret
+
+.globl cpi_vfmaccvv
+.align 2
+cpi_vfmaccvv:
+.rep 200
+    vfmacc.vv v10, v0, v0
+    vfmacc.vv v10, v1, v1
+    vfmacc.vv v10, v2, v2
+    vfmacc.vv v10, v3, v3
+    vfmacc.vv v10, v4, v4
+    vfmacc.vv v10, v5, v5
+    vfmacc.vv v10, v6, v6
+    vfmacc.vv v10, v7, v7
+    vfmacc.vv v10, v8, v8
+    vfmacc.vv v10, v9, v9
+.endr
+ret
+
+.globl cpi_vfmaccvv_x1
+.align 2
+cpi_vfmaccvv_x1:
+.rep 2000
+    vfmacc.vv v0, v0, v0
+.endr
+ret
+
+.globl cpi_vfminvv
+.align 2
+cpi_vfminvv:
+.rep 200
+    vfmin.vv v10, v0, v0
+    vfmin.vv v10, v1, v1
+    vfmin.vv v10, v2, v2
+    vfmin.vv v10, v3, v3
+    vfmin.vv v10, v4, v4
+    vfmin.vv v10, v5, v5
+    vfmin.vv v10, v6, v6
+    vfmin.vv v10, v7, v7
+    vfmin.vv v10, v8, v8
+    vfmin.vv v10, v9, v9
+.endr
+ret
+
+.globl cpi_vfminvv_x1
+.align 2
+cpi_vfminvv_x1:
+.rep 2000
+    vfmin.vv v0, v0, v0
+.endr
+ret
+
+.globl cpi_vfsgnjvv
+.align 2
+cpi_vfsgnjvv:
+.rep 200
+    vfsgnj.vv v10, v0, v0
+    vfsgnj.vv v10, v1, v1
+    vfsgnj.vv v10, v2, v2
+    vfsgnj.vv v10, v3, v3
+    vfsgnj.vv v10, v4, v4
+    vfsgnj.vv v10, v5, v5
+    vfsgnj.vv v10, v6, v6
+    vfsgnj.vv v10, v7, v7
+    vfsgnj.vv v10, v8, v8
+    vfsgnj.vv v10, v9, v9
+.endr
+ret
+
+.globl cpi_vfsgnjvv_x1
+.align 2
+cpi_vfsgnjvv_x1:
+.rep 2000
+    vfsgnj.vv v0, v0, v0
+.endr
+ret
+
+.globl pre_vfdiv
+.align 2
+pre_vfdiv:
+    vle64.v v0, (a0)
+    vle64.v v1, (a1)
+ret
+
+.globl cpi_vfdivvv
+.align 2
+cpi_vfdivvv:
+.rep 200
+    vfdiv.vv v10, v0, v1
+    vfdiv.vv v11, v0, v1
+    vfdiv.vv v12, v0, v1
+    vfdiv.vv v13, v0, v1
+    vfdiv.vv v14, v0, v1
+    vfdiv.vv v15, v0, v1
+    vfdiv.vv v16, v0, v1
+    vfdiv.vv v17, v0, v1
+    vfdiv.vv v18, v0, v1
+    vfdiv.vv v19, v0, v1
+.endr
+ret
+
+.globl cpi_vfdivvv_x1
+.align 2
+cpi_vfdivvv_x1:
+.rep 2000
+    vfdiv.vv v0, v0, v1
+.endr
+ret
+
+.globl cpi_vfsqrtv
+.align 2
+cpi_vfsqrtv:
+.rep 200
+    vfsqrt.v v10, v0
+    vfsqrt.v v11, v0
+    vfsqrt.v v12, v0
+    vfsqrt.v v13, v0
+    vfsqrt.v v14, v0
+    vfsqrt.v v15, v0
+    vfsqrt.v v16, v0
+    vfsqrt.v v17, v0
+    vfsqrt.v v18, v0
+    vfsqrt.v v19, v0
+.endr
+ret
+
+.globl cpi_vfsqrtv_x1
+.align 2
+cpi_vfsqrtv_x1:
+.rep 2000
+    vfsqrt.v v10, v0
 .endr
 ret

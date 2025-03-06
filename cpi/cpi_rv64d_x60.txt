@@ -1,0 +1,33 @@
+cpi_fadd                       cycles/insts/CPI=805/1603/0.50
+cpi_fadd_x1                    cycles/insts/CPI=6402/1603/3.99
+cpi_fmul                       cycles/insts/CPI=1005/1603/0.63
+cpi_fmul_x1                    cycles/insts/CPI=8002/1603/4.99
+cpi_fmin                       cycles/insts/CPI=805/1603/0.50
+cpi_fmin_x1                    cycles/insts/CPI=6402/1603/3.99
+cpi_fmadd                      cycles/insts/CPI=1607/1603/1.00
+cpi_fmadd_x1                   cycles/insts/CPI=9602/1603/5.99
+cpi_fsgnj                      cycles/insts/CPI=1605/1603/1.00
+cpi_fsgnj_x1                   cycles/insts/CPI=6402/1603/3.99
+1/2:
+cpi_fdiv                       cycles/insts/CPI=36803/1603/22.96
+3.14159/3.14159:
+cpi_fdiv                       cycles/insts/CPI=36803/1603/22.96
+1e+308/1e-308:
+cpi_fdiv                       cycles/insts/CPI=36803/1603/22.96
+1e-308/1e+308:
+cpi_fdiv                       cycles/insts/CPI=38403/1603/23.96
+1e+308/1.14159:
+cpi_fdiv                       cycles/insts/CPI=36803/1603/22.96
+cpi_fdiv_x1                    cycles/insts/CPI=40002/1603/24.95
+sqrt(1):
+cpi_fsqrt                      cycles/insts/CPI=36803/1603/22.96
+cpi_fsqrt_x1                   cycles/insts/CPI=38402/1603/23.96
+sqrt(3.14159):
+cpi_fsqrt                      cycles/insts/CPI=36803/1603/22.96
+cpi_fsqrt_x1                   cycles/insts/CPI=38402/1603/23.96
+sqrt(1e+308):
+cpi_fsqrt                      cycles/insts/CPI=36803/1603/22.96
+cpi_fsqrt_x1                   cycles/insts/CPI=38402/1603/23.96
+sqrt(1e-308):
+cpi_fsqrt                      cycles/insts/CPI=36803/1603/22.96
+cpi_fsqrt_x1                   cycles/insts/CPI=38402/1603/23.96
