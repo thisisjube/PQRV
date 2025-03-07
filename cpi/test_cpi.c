@@ -122,7 +122,7 @@ extern void cpi_vfminvv();
 extern void cpi_vfminvv_x1();
 extern void cpi_vfsgnjvv();
 extern void cpi_vfsgnjvv_x1();
-extern void pre_vfdiv(double *, double *);
+extern void pre_v0v1(double *, double *);
 extern void cpi_vfdivvv();
 extern void cpi_vfdivvv_x1();
 extern void cpi_vfsqrtv();
@@ -261,24 +261,64 @@ int main(void)
     double f0[4] = {1.141592653589793, 1.141592653589793,
                     1.141592653589793, 1.141592653589793};
     double f1[4] = {1.0e308, 1.0e308, 1.0e308, 1.0e308};
-    init_vector_double_reg(f0);
+    init_vector_double_reg(f1);
     PERF(cpi_vfaddvv(), cpi_vfaddvv);
     PERF(cpi_vfaddvv_x1(), cpi_vfaddvv_x1);
-    PERF(cpi_vfmulvv(), cpi_vfmulvv);
-    PERF(cpi_vfmulvv_x1(), cpi_vfmulvv_x1);
-    PERF(cpi_vfmaccvv(), cpi_vfmaccvv);
-    PERF(cpi_vfmaccvv_x1(), cpi_vfmaccvv_x1);
     PERF(cpi_vfminvv(), cpi_vfminvv);
     PERF(cpi_vfminvv_x1(), cpi_vfminvv_x1);
     PERF(cpi_vfsgnjvv(), cpi_vfsgnjvv);
     PERF(cpi_vfsgnjvv_x1(), cpi_vfsgnjvv_x1);
-    pre_vfdiv(f1, f0);
-    printf("%g/%g:\n", f1[0], f0[0]);
+
+    for (int i = 0; i < 4; i++)
+        f0[i] = 1.141592653589793;
+    for (int i = 0; i < 4; i++)
+        f1[i] = 2.141592653589793;
+    pre_v0v1(f0, f1);
+    printf("v0 = %g, v1 = %g:\n", f0[0], f1[0]);
+    PERF(cpi_vfmulvv(), cpi_vfmulvv);
+    PERF(cpi_vfmaccvv(), cpi_vfmaccvv);
     PERF(cpi_vfdivvv(), cpi_vfdivvv);
-    PERF(cpi_vfdivvv_x1(), cpi_vfdivvv_x1);
-    pre_vfdiv(f1, f0);
-    printf("sqrt(%g):\n", f1[0]);
     PERF(cpi_vfsqrtv(), cpi_vfsqrtv);
+
+    for (int i = 0; i < 4; i++)
+        f0[i] = 1.0e308;
+    for (int i = 0; i < 4; i++)
+        f1[i] = 1.0e-308;
+    pre_v0v1(f0, f1);
+    printf("v0 = %g, v1 = %g:\n", f0[0], f1[0]);
+    PERF(cpi_vfmulvv(), cpi_vfmulvv);
+    PERF(cpi_vfmaccvv(), cpi_vfmaccvv);
+    PERF(cpi_vfdivvv(), cpi_vfdivvv);
+    PERF(cpi_vfsqrtv(), cpi_vfsqrtv);
+
+    for (int i = 0; i < 4; i++)
+        f0[i] = 1.0e-308;
+    for (int i = 0; i < 4; i++)
+        f1[i] = 1.0e308;
+    pre_v0v1(f0, f1);
+    printf("v0 = %g, v1 = %g:\n", f0[0], f1[0]);
+    PERF(cpi_vfmulvv(), cpi_vfmulvv);
+    PERF(cpi_vfmaccvv(), cpi_vfmaccvv);
+    PERF(cpi_vfdivvv(), cpi_vfdivvv);
+    PERF(cpi_vfsqrtv(), cpi_vfsqrtv);
+
+    for (int i = 0; i < 4; i++)
+        f0[i] = 1.0e308;
+    for (int i = 0; i < 4; i++)
+        f1[i] = 1.141592653589793;
+    pre_v0v1(f0, f1);
+    printf("v0 = %g, v1 = %g:\n", f0[0], f1[0]);
+    PERF(cpi_vfmulvv(), cpi_vfmulvv);
+    PERF(cpi_vfmaccvv(), cpi_vfmaccvv);
+    PERF(cpi_vfdivvv(), cpi_vfdivvv);
+    PERF(cpi_vfsqrtv(), cpi_vfsqrtv);
+    pre_v0v1(f0, f1);
+    PERF(cpi_vfmulvv_x1(), cpi_vfmulvv_x1);
+    pre_v0v1(f0, f1);
+    PERF(cpi_vfmaccvv_x1(), cpi_vfmaccvv_x1);
+    pre_v0v1(f0, f1);
+    PERF(cpi_vfdivvv_x1(), cpi_vfdivvv_x1);
+    pre_v0v1(f0, f1);
     PERF(cpi_vfsqrtv_x1(), cpi_vfsqrtv_x1);
 #endif
 

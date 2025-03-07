@@ -18,8 +18,8 @@ cpi_vandvx_and_hybrid_v2       cycles/insts/CPI=4005/4003/1.00
 cpi_vandvx_and_hybrid_v3       cycles/insts/CPI=4005/5003/0.80
 cpi_vandvx_and_hybrid_v4       cycles/insts/CPI=4005/6003/0.67
 cpi_vandvx_and_hybrid_v4_1     cycles/insts/CPI=4005/6003/0.67
-cpi_vandvx_and_hybrid_v5       cycles/insts/CPI=4338/7003/0.62
-cpi_vandvx_and_hybrid_v6       cycles/insts/CPI=4672/8003/0.58
+cpi_vandvx_and_hybrid_v5       cycles/insts/CPI=4005/7003/0.57
+cpi_vandvx_and_hybrid_v6       cycles/insts/CPI=4005/8003/0.50
 cpi_vsllvi                     cycles/insts/CPI=4005/2003/2.00
 cpi_vsllvi_x1                  cycles/insts/CPI=8003/2003/4.00
 cpi_vsllvi_x2                  cycles/insts/CPI=4005/2003/2.00
@@ -96,19 +96,33 @@ cpi_vmulhvv_x2                 cycles/insts/CPI=8007/2003/4.00
 cpi_vmulhvv_x4                 cycles/insts/CPI=8007/2003/4.00
 
 init_vector_e64, the length of vector is 256 bits
-cpi_vfaddvv                    cycles/insts/CPI=8003/2003/4.00
+cpi_vfaddvv                    cycles/insts/CPI=2006/2003/1.00
 cpi_vfaddvv_x1                 cycles/insts/CPI=8003/2003/4.00
-cpi_vfmulvv                    cycles/insts/CPI=10003/2003/4.99
-cpi_vfmulvv_x1                 cycles/insts/CPI=10003/2003/4.99
-cpi_vfmaccvv                   cycles/insts/CPI=12003/2003/5.99
-cpi_vfmaccvv_x1                cycles/insts/CPI=12003/2003/5.99
-cpi_vfminvv                    cycles/insts/CPI=8003/2003/4.00
+cpi_vfminvv                    cycles/insts/CPI=2006/2003/1.00
 cpi_vfminvv_x1                 cycles/insts/CPI=8003/2003/4.00
-cpi_vfsgnjvv                   cycles/insts/CPI=8003/2003/4.00
+cpi_vfsgnjvv                   cycles/insts/CPI=4005/2003/2.00
 cpi_vfsgnjvv_x1                cycles/insts/CPI=8003/2003/4.00
-1e+308/1.14159:
+v0 = 1.14159, v1 = 2.14159:
+cpi_vfmulvv                    cycles/insts/CPI=2007/2003/1.00
+cpi_vfmaccvv                   cycles/insts/CPI=2008/2003/1.00
 cpi_vfdivvv                    cycles/insts/CPI=80003/2003/39.94
-cpi_vfdivvv_x1                 cycles/insts/CPI=96003/2003/47.93
-sqrt(1e+308):
 cpi_vfsqrtv                    cycles/insts/CPI=80003/2003/39.94
+v0 = 1e+308, v1 = 1e-308:
+cpi_vfmulvv                    cycles/insts/CPI=2008/2003/1.00
+cpi_vfmaccvv                   cycles/insts/CPI=2008/2003/1.00
+cpi_vfdivvv                    cycles/insts/CPI=92003/2003/45.93
+cpi_vfsqrtv                    cycles/insts/CPI=80003/2003/39.94
+v0 = 1e-308, v1 = 1e+308:
+cpi_vfmulvv                    cycles/insts/CPI=2008/2003/1.00
+cpi_vfmaccvv                   cycles/insts/CPI=2008/2003/1.00
+cpi_vfdivvv                    cycles/insts/CPI=96003/2003/47.93
+cpi_vfsqrtv                    cycles/insts/CPI=92003/2003/45.93
+v0 = 1e+308, v1 = 1.14159:
+cpi_vfmulvv                    cycles/insts/CPI=2008/2003/1.00
+cpi_vfmaccvv                   cycles/insts/CPI=2008/2003/1.00
+cpi_vfdivvv                    cycles/insts/CPI=80003/2003/39.94
+cpi_vfsqrtv                    cycles/insts/CPI=80003/2003/39.94
+cpi_vfmulvv_x1                 cycles/insts/CPI=10003/2003/4.99
+cpi_vfmaccvv_x1                cycles/insts/CPI=12003/2003/5.99
+cpi_vfdivvv_x1                 cycles/insts/CPI=96003/2003/47.93
 cpi_vfsqrtv_x1                 cycles/insts/CPI=80003/2003/39.94

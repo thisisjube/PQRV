@@ -48,29 +48,6 @@ cpi_fadd_x1:
 .endr
 ret
 
-.globl cpi_fmul
-.align 2
-cpi_fmul:
-.rep 200
-    fmul.d f8,  f0, f0
-    fmul.d f9,  f1, f1
-    fmul.d f10, f2, f2
-    fmul.d f11, f3, f3
-    fmul.d f12, f4, f4
-    fmul.d f13, f5, f5
-    fmul.d f14, f6, f6
-    fmul.d f15, f7, f7
-.endr
-ret
-
-.globl cpi_fmul_x1
-.align 2
-cpi_fmul_x1:
-.rep 1600
-    fmul.d f0, f0, f0
-.endr
-ret
-
 .globl cpi_fmin
 .align 2
 cpi_fmin:
@@ -91,29 +68,6 @@ ret
 cpi_fmin_x1:
 .rep 1600
     fmin.d f0, f0, f0
-.endr
-ret
-
-.globl cpi_fmadd
-.align 2
-cpi_fmadd:
-.rep 200
-    fmadd.d f0, f0, f0, f0
-    fmadd.d f1, f1, f1, f1
-    fmadd.d f2, f2, f2, f2
-    fmadd.d f3, f3, f3, f3
-    fmadd.d f4, f4, f4, f4
-    fmadd.d f5, f5, f5, f5
-    fmadd.d f6, f6, f6, f6
-    fmadd.d f7, f7, f7, f7
-.endr
-ret
-
-.globl cpi_fmadd_x1
-.align 2
-cpi_fmadd_x1:
-.rep 1600
-    fmadd.d f0, f0, f0, f0
 .endr
 ret
 
@@ -140,11 +94,57 @@ cpi_fsgnj_x1:
 .endr
 ret
 
-.globl pre_div
+.globl pre_f0f1
 .align 2
-pre_div:
+pre_f0f1:
     fld f0, (a0)
     fld f1, (a1)
+ret
+
+.globl cpi_fmul
+.align 2
+cpi_fmul:
+.rep 200
+    fmul.d f8,  f0, f1
+    fmul.d f9,  f0, f1
+    fmul.d f10, f0, f1
+    fmul.d f11, f0, f1
+    fmul.d f12, f0, f1
+    fmul.d f13, f0, f1
+    fmul.d f14, f0, f1
+    fmul.d f15, f0, f1
+.endr
+ret
+
+.globl cpi_fmul_x1
+.align 2
+cpi_fmul_x1:
+.rep 1600
+    fmul.d f0, f0, f1
+.endr
+ret
+
+.globl cpi_fmadd
+.align 2
+cpi_fmadd:
+.rep 200
+    fmadd.d f10, f0, f1, f1
+    fmadd.d f11, f0, f1, f1
+    fmadd.d f12, f0, f1, f1
+    fmadd.d f13, f0, f1, f1
+    fmadd.d f14, f0, f1, f1
+    fmadd.d f15, f0, f1, f1
+    fmadd.d f16, f0, f1, f1
+    fmadd.d f17, f0, f1, f1
+.endr
+ret
+
+.globl cpi_fmadd_x1
+.align 2
+cpi_fmadd_x1:
+.rep 1600
+    fmadd.d f0, f0, f1, f1
+.endr
 ret
 
 .globl cpi_fdiv

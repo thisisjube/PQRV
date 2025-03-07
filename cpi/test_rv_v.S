@@ -1012,15 +1012,15 @@ ret
 cpi_vfaddvv:
 .rep 200
     vfadd.vv v10, v0, v0
-    vfadd.vv v10, v1, v1
-    vfadd.vv v10, v2, v2
-    vfadd.vv v10, v3, v3
-    vfadd.vv v10, v4, v4
-    vfadd.vv v10, v5, v5
-    vfadd.vv v10, v6, v6
-    vfadd.vv v10, v7, v7
-    vfadd.vv v10, v8, v8
-    vfadd.vv v10, v9, v9
+    vfadd.vv v11, v1, v1
+    vfadd.vv v12, v2, v2
+    vfadd.vv v13, v3, v3
+    vfadd.vv v14, v4, v4
+    vfadd.vv v15, v5, v5
+    vfadd.vv v16, v6, v6
+    vfadd.vv v17, v7, v7
+    vfadd.vv v18, v8, v8
+    vfadd.vv v19, v9, v9
 .endr
 ret
 
@@ -1032,70 +1032,20 @@ cpi_vfaddvv_x1:
 .endr
 ret
 
-.globl cpi_vfmulvv
-.align 2
-cpi_vfmulvv:
-.rep 200
-    vfmul.vv v10, v0, v0
-    vfmul.vv v10, v1, v1
-    vfmul.vv v10, v2, v2
-    vfmul.vv v10, v3, v3
-    vfmul.vv v10, v4, v4
-    vfmul.vv v10, v5, v5
-    vfmul.vv v10, v6, v6
-    vfmul.vv v10, v7, v7
-    vfmul.vv v10, v8, v8
-    vfmul.vv v10, v9, v9
-.endr
-ret
-
-.globl cpi_vfmulvv_x1
-.align 2
-cpi_vfmulvv_x1:
-.rep 2000
-    vfmul.vv v0, v0, v0
-.endr
-ret
-
-.globl cpi_vfmaccvv
-.align 2
-cpi_vfmaccvv:
-.rep 200
-    vfmacc.vv v10, v0, v0
-    vfmacc.vv v10, v1, v1
-    vfmacc.vv v10, v2, v2
-    vfmacc.vv v10, v3, v3
-    vfmacc.vv v10, v4, v4
-    vfmacc.vv v10, v5, v5
-    vfmacc.vv v10, v6, v6
-    vfmacc.vv v10, v7, v7
-    vfmacc.vv v10, v8, v8
-    vfmacc.vv v10, v9, v9
-.endr
-ret
-
-.globl cpi_vfmaccvv_x1
-.align 2
-cpi_vfmaccvv_x1:
-.rep 2000
-    vfmacc.vv v0, v0, v0
-.endr
-ret
-
 .globl cpi_vfminvv
 .align 2
 cpi_vfminvv:
 .rep 200
     vfmin.vv v10, v0, v0
-    vfmin.vv v10, v1, v1
-    vfmin.vv v10, v2, v2
-    vfmin.vv v10, v3, v3
-    vfmin.vv v10, v4, v4
-    vfmin.vv v10, v5, v5
-    vfmin.vv v10, v6, v6
-    vfmin.vv v10, v7, v7
-    vfmin.vv v10, v8, v8
-    vfmin.vv v10, v9, v9
+    vfmin.vv v11, v1, v1
+    vfmin.vv v12, v2, v2
+    vfmin.vv v13, v3, v3
+    vfmin.vv v14, v4, v4
+    vfmin.vv v15, v5, v5
+    vfmin.vv v16, v6, v6
+    vfmin.vv v17, v7, v7
+    vfmin.vv v18, v8, v8
+    vfmin.vv v19, v9, v9
 .endr
 ret
 
@@ -1112,15 +1062,15 @@ ret
 cpi_vfsgnjvv:
 .rep 200
     vfsgnj.vv v10, v0, v0
-    vfsgnj.vv v10, v1, v1
-    vfsgnj.vv v10, v2, v2
-    vfsgnj.vv v10, v3, v3
-    vfsgnj.vv v10, v4, v4
-    vfsgnj.vv v10, v5, v5
-    vfsgnj.vv v10, v6, v6
-    vfsgnj.vv v10, v7, v7
-    vfsgnj.vv v10, v8, v8
-    vfsgnj.vv v10, v9, v9
+    vfsgnj.vv v11, v1, v1
+    vfsgnj.vv v12, v2, v2
+    vfsgnj.vv v13, v3, v3
+    vfsgnj.vv v14, v4, v4
+    vfsgnj.vv v15, v5, v5
+    vfsgnj.vv v16, v6, v6
+    vfsgnj.vv v17, v7, v7
+    vfsgnj.vv v18, v8, v8
+    vfsgnj.vv v19, v9, v9
 .endr
 ret
 
@@ -1132,11 +1082,61 @@ cpi_vfsgnjvv_x1:
 .endr
 ret
 
-.globl pre_vfdiv
+.globl pre_v0v1
 .align 2
-pre_vfdiv:
+pre_v0v1:
     vle64.v v0, (a0)
     vle64.v v1, (a1)
+ret
+
+.globl cpi_vfmulvv
+.align 2
+cpi_vfmulvv:
+.rep 200
+    vfmul.vv v10, v0, v1
+    vfmul.vv v11, v0, v1
+    vfmul.vv v12, v0, v1
+    vfmul.vv v13, v0, v1
+    vfmul.vv v14, v0, v1
+    vfmul.vv v15, v0, v1
+    vfmul.vv v16, v0, v1
+    vfmul.vv v17, v0, v1
+    vfmul.vv v18, v0, v1
+    vfmul.vv v19, v0, v1
+.endr
+ret
+
+.globl cpi_vfmulvv_x1
+.align 2
+cpi_vfmulvv_x1:
+.rep 2000
+    vfmul.vv v0, v0, v1
+.endr
+ret
+
+.globl cpi_vfmaccvv
+.align 2
+cpi_vfmaccvv:
+.rep 200
+    vfmacc.vv v10, v0, v1
+    vfmacc.vv v11, v0, v1
+    vfmacc.vv v12, v0, v1
+    vfmacc.vv v13, v0, v1
+    vfmacc.vv v14, v0, v1
+    vfmacc.vv v15, v0, v1
+    vfmacc.vv v16, v0, v1
+    vfmacc.vv v17, v0, v1
+    vfmacc.vv v18, v0, v1
+    vfmacc.vv v19, v0, v1
+.endr
+ret
+
+.globl cpi_vfmaccvv_x1
+.align 2
+cpi_vfmaccvv_x1:
+.rep 2000
+    vfmacc.vv v0, v0, v1
+.endr
 ret
 
 .globl cpi_vfdivvv
@@ -1185,6 +1185,6 @@ ret
 .align 2
 cpi_vfsqrtv_x1:
 .rep 2000
-    vfsqrt.v v10, v0
+    vfsqrt.v v0, v0
 .endr
 ret
