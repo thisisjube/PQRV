@@ -1,6 +1,13 @@
 CC = gcc
+LD = gcc
 OBJDUMP = objdump
 SCP 	= scp
+# -MT $@: Set the target name in the dependency file to the current rule's target ($@).
+# -MMD: Generate a dependency file, excluding system headers.
+# -MP: Add empty phony targets for each dependency to prevent errors if headers are missing.
+# -MF out/$*.d: Output the dependency file to the specified path (out/$*.d).
+DEPFLAGS = -MT $@ -MMD -MP -MF out/$*.d
+LDFLAGS = 
 
 COMMONDIR 		= ../common
 
@@ -13,8 +20,18 @@ CFLAGS_RV64IMV 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64d -DVECTOR128 -DRV
 CFLAGS_RV64IMBV = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64d -DVECTOR128 -DRV64=1
 CFLAGS_RV64GCVB = $(CFLAGS_COMMON) -march=rv64gcv_zba_zbb -mabi=lp64d -DVECTOR128 -DRV64=1
 
-SOURCES_COMMON 	= $(COMMONDIR)/cpucycles.c $(COMMONDIR)/speed_print.c
-HEADERS_COMMON 	= $(COMMONDIR)/cpucycles.h $(COMMONDIR)/speed_print.h
+SRCS_COMM 		= $(COMMONDIR)/cpucycles.c $(COMMONDIR)/speed_print.c
+SRCS_RV64IMB 	= test_rv_im.S test_cpi_rv64imb.c
+SRCS_RVV		= test_rv_v.S test_cpi_rvv.c
+SRCS_RV64D		= test_rv_d.S test_cpi_d.c
+
+OBJS_COMM		= $(addprefix out/, $(notdir $(SRCS_COMM:.c=.o)))
+OBJS_RV64IMB	= $(addprefix out/, $(SRCS_RV64IMB:.S=.o))
+OBJS_RV64IMB	:= $(OBJS_RV64IMB:.c=.o)
+OBJS_RVV		= $(addprefix out/, $(SRCS_RVV:.S=.o))
+OBJS_RVV		:= $(OBJS_RVV:.c=.o)
+OBJS_RV64D		= $(addprefix out/, $(SRCS_RV64D:.S=.o))
+OBJS_RV64D		:= $(OBJS_RV64D:.c=.o)
 
 .PHONY: all run_all clean
 
@@ -26,17 +43,23 @@ run_all: out/cpi_rv64imb out/cpi_rvv out/cpi_rv64d
 	perf stat ./out/cpi_rvv > cpi_rvv_x60.txt 2>/dev/null
 	perf stat ./out/cpi_rv64d > cpi_rv64d_x60.txt 2>/dev/null
 
-out/cpi_rv64imb: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_im.S test_cpi.c
-	mkdir -p out
-	$(CC) $(CFLAGS_RV64IMB) $(filter %.c, $^) $(filter %.S, $^) -o $@
-
-out/cpi_rvv: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_v.S test_cpi.c
-	mkdir -p out
-	$(CC) $(CFLAGS_RV64GCVB) $(filter %.c, $^) $(filter %.S, $^) -o $@
-
-out/cpi_rv64d: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_d.S test_cpi_d.c
-	mkdir -p out
-	$(CC) $(CFLAGS_RV64GCVB) $(filter %.c, $^) $(filter %.S, $^) -o $@
-
 clean:
 	rm -rf out/
+
+out/cpi_rv64imb: $(OBJS_COMM) $(OBJS_RV64IMB)
+	$(LD) $(LDFLAGS) $^ -o $@
+
+out/cpi_rvv: $(OBJS_COMM) $(OBJS_RVV)
+	$(LD) $(LDFLAGS) $^ -o $@
+
+out/cpi_rv64d: $(OBJS_COMM) $(OBJS_RV64D)
+	$(LD) $(LDFLAGS) $^ -o $@
+
+out/%.o: $(COMMONDIR)/%.c
+	$(CC) $(CFLAGS_RV64GCVB) $(DEPFLAGS) -c $< -o $@
+
+out/%.o: %.[Sc]
+	$(CC) $(CFLAGS_RV64GCVB) $(DEPFLAGS) -c $< -o $@
+
+-include $(wildcard out/*.d)
+

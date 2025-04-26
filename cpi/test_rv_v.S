@@ -433,6 +433,11 @@ F_OP_VI_x1 vsll
 F_OP_VI_x2 vsll
 F_OP_VI_x4 vsll
 
+F_OP_VV vmsltu
+F_OP_VV_x1 vmsltu
+F_OP_VV_x2 vmsltu
+F_OP_VV_x4 vmsltu
+
 FUNC cpi_vssrlvi
     # vxrm[1:0]=0b00 for round-to-nearest-up; =0b10 for round-down
     csrwi vxrm, 0
@@ -452,6 +457,268 @@ F_OP_VI vsra
 F_OP_VI_x1 vsra
 F_OP_VI_x2 vsra
 F_OP_VI_x4 vsra
+
+FUNC cpi_vsrl_vmsltu
+.rep 200
+    vsrl.vi v0, v0, 1
+    vmsltu.vv v2, v2, v10
+    vsrl.vi v1, v1, 1
+    vmsltu.vv v3, v3, v10
+    vsrl.vi v4, v4, 1
+    vmsltu.vv v6, v6, v10
+    vsrl.vi v5, v5, 1
+    vmsltu.vv v7, v7, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_2_2
+.rep 200
+    vsrl.vi v0, v0, 1
+    vsrl.vi v1, v1, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vsrl.vi v4, v4, 1
+    vsrl.vi v5, v5, 1
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_2_2
+.rep 200
+    vand.vv v0, v0, v0
+    vand.vv v1, v1, v1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vand.vv v4, v4, v4
+    vand.vv v5, v5, v5
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_2_3
+.rep 200
+    vsrl.vi v0, v0, 1
+    vsrl.vi v1, v1, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v13, v13, v10
+    vsrl.vi v4, v4, 1
+    vsrl.vi v5, v5, 1
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_2_3
+.rep 200
+    vand.vv v0, v0, v0
+    vand.vv v1, v1, v1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v13, v13, v10
+    vand.vv v4, v4, v4
+    vand.vv v5, v5, v5
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_2_4
+.rep 200
+    vsrl.vi v0, v0, 1
+    vsrl.vi v1, v1, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v12, v12, v10
+    vadd.vv v13, v13, v10
+    vsrl.vi v4, v4, 1
+    vsrl.vi v5, v5, 1
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+    vadd.vv v16, v16, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_2_4
+.rep 200
+    vand.vv v0, v0, v0
+    vand.vv v1, v1, v1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v12, v12, v10
+    vadd.vv v13, v13, v10
+    vand.vv v4, v4, v4
+    vand.vv v5, v5, v5
+    vadd.vv v6, v6, v10
+    vadd.vv v7, v7, v10
+    vadd.vv v16, v16, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_2_6
+.rep 200
+    vsrl.vi v0, v0, 1
+    vsrl.vi v1, v1, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v12, v12, v10
+    vadd.vv v13, v13, v10
+    vadd.vv v16, v16, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_2_6
+.rep 200
+    vand.vv v0, v0, v0
+    vand.vv v1, v1, v1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v12, v12, v10
+    vadd.vv v13, v13, v10
+    vadd.vv v16, v16, v10
+    vadd.vv v17, v17, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_1_1
+.rep 200
+    vsrl.vi v0, v0, 1
+    vadd.vv v1, v1, v10
+    vsrl.vi v2, v2, 1
+    vadd.vv v3, v3, v10
+    vsrl.vi v4, v4, 1
+    vadd.vv v5, v5, v10
+    vsrl.vi v6, v6, 1
+    vadd.vv v7, v7, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_1_1
+.rep 200
+    vand.vi v0, v0, 1
+    vadd.vv v1, v1, v10
+    vand.vi v2, v2, 1
+    vadd.vv v3, v3, v10
+    vand.vi v4, v4, 1
+    vadd.vv v5, v5, v10
+    vand.vi v6, v6, 1
+    vadd.vv v7, v7, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_1_2
+.rep 200
+    vsrl.vi v0, v0, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vsrl.vi v4, v4, 1
+    vadd.vv v5, v5, v10
+    vadd.vv v6, v6, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_1_2
+.rep 200
+    vand.vv v0, v0, v0
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vand.vv v4, v4, v0
+    vadd.vv v5, v5, v10
+    vadd.vv v6, v6, v10
+.endr
+ret
+
+FUNC cpi_vsrl_vadd_1_3
+.rep 200
+    vsrl.vi v0, v0, 1
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v4, v4, v10
+.endr
+ret
+
+FUNC cpi_vand_vadd_1_3
+.rep 200
+    vand.vv v0, v0, v0
+    vadd.vv v2, v2, v10
+    vadd.vv v3, v3, v10
+    vadd.vv v4, v4, v10
+.endr
+ret
+
+FUNC cpi_vmsbc_vmslt
+.rep 250
+    vmsbc.vv v10, v0, v31
+    vmslt.vv v12, v2, v31
+    vmsbc.vv v11, v1, v31
+    vmslt.vv v13, v3, v31
+    vmsbc.vv v14, v4, v31
+    vmslt.vv v16, v6, v31
+    vmsbc.vv v15, v5, v31
+    vmslt.vv v17, v7, v31
+.endr
+ret
+
+FUNC cpi_vmsbc_vsub
+.rep 250
+    vmsbc.vv v10, v0, v31
+    vsub.vv  v12, v2, v31
+    vmsbc.vv v11, v1, v31
+    vsub.vv  v13, v3, v31
+    vmsbc.vv v14, v4, v31
+    vsub.vv  v16, v6, v31
+    vmsbc.vv v15, v5, v31
+    vsub.vv  v17, v7, v31
+.endr
+ret
+
+FUNC cpi_vmsbc_2_vsub_4
+.rep 250
+    vmsbc.vv v10, v0, v31
+    vsub.vv  v12, v2, v31
+    vsub.vv  v13, v3, v31
+    vmsbc.vv v11, v1, v31
+    vsub.vv  v14, v4, v31
+    vsub.vv  v15, v5, v31
+.endr
+ret
+
+FUNC cpi_vmvvv
+.rep 200
+    vmv.v.v v0, v1
+    vmv.v.v v2, v3
+    vmv.v.v v4, v5
+    vmv.v.v v6, v7
+    vmv.v.v v8, v9
+    vmv.v.v v10,v11
+    vmv.v.v v12,v13
+    vmv.v.v v14,v15
+    vmv.v.v v16,v17
+    vmv.v.v v18,v19
+.endr
+ret
+
+FUNC cpi_vmvvv_x1
+.rep 200
+    vmv.v.v v0, v1
+    vmv.v.v v2, v0
+    vmv.v.v v3, v2
+    vmv.v.v v4, v3
+    vmv.v.v v5, v4
+    vmv.v.v v6, v5
+    vmv.v.v v7, v6
+    vmv.v.v v8, v7
+    vmv.v.v v9, v8
+    vmv.v.v v1,v9
+.endr
+ret
 
 F_OP_VV vrgather
 
