@@ -315,6 +315,52 @@ FUNC cpi_\()\op\()vvm_x4
 FUNC_END cpi_\()\op\()vvm_x4
 .endm
 
+.macro F_OP_LD_x8 op
+FUNC cpi_\()\op
+.rep 200
+    \op\().v v0, (a0)
+    \op\().v v1, (a1)
+    \op\().v v2, (a2)
+    \op\().v v3, (a3)
+    \op\().v v4, (a0)
+    \op\().v v5, (a1)
+    \op\().v v6, (a2)
+    \op\().v v7, (a3)
+.endr
+FUNC_END cpi_\()\op
+.endm
+
+.macro F_OP_LD_ADD op, name
+FUNC cpi_\()\name
+.rep 200
+    \op\().v v0, (a0)
+    vadd.vv v10, v0, v0
+    vadd.vv v11, v0, v0
+    vadd.vv v12, v0, v0
+    vadd.vv v13, v0, v0
+.endr
+FUNC_END cpi_\()\name
+.endm
+
+.macro F_OP_LSE_x8 op
+FUNC cpi_\()\op
+.rep 200
+    \op\().v v0, (a0), a4
+    \op\().v v1, (a1), a4
+    \op\().v v2, (a2), a4
+    \op\().v v3, (a3), a4
+    \op\().v v4, (a0), a4
+    \op\().v v5, (a1), a4
+    \op\().v v6, (a2), a4
+    \op\().v v7, (a3), a4
+.endr
+FUNC_END cpi_\()\op
+.endm
+
+FUNC init_vector_e8
+    li t0, 32
+    vsetvli a0, t0, e8, m1, tu, mu
+ret
 
 FUNC init_vector_e16
     vsetivli a0, 16, e16, m1, tu, mu
@@ -328,50 +374,31 @@ FUNC init_vector_e64
     vsetivli a0, 4, e64, m1, tu, mu
 ret
 
-FUNC cpi_vle16
-.rep 200
-    vle16.v v0, (a0)
-    vle16.v v1, (a0)
-    vle16.v v2, (a0)
-    vle16.v v3, (a0)
-    vle16.v v4, (a0)
-    vle16.v v5, (a0)
-    vle16.v v6, (a0)
-    vle16.v v7, (a0)
-    vle16.v v8, (a0)
-    vle16.v v9, (a0)
-.endr
-ret
+F_OP_LD_x8 vle8
+F_OP_LD_x8 vse8
+F_OP_LD_ADD vle8, vle8_add
 
-FUNC cpi_vle16_add
-.rep 200
-    vle16.v v0, (a0)
-    vadd.vv v10, v0, v0
-    vadd.vv v11, v0, v0
-    vadd.vv v12, v0, v0
-    vadd.vv v13, v0, v0
-.endr
-ret
+F_OP_LD_x8 vle16
+F_OP_LD_x8 vse16
+F_OP_LD_ADD vle16, vle16_add
 
-FUNC cpi_vse16
-.rep 200
-    vse16.v v0, (a0)
-    vse16.v v1, (a1)
-    vse16.v v2, (a2)
-    vse16.v v3, (a3)
-.endr
-ret
+F_OP_LD_x8 vle32
+F_OP_LD_x8 vse32
+F_OP_LD_ADD vle32, vle32_add
 
-# Since there is no data dependency between vse and vadd instructions, the actual latency of vse instruction cannot be reflected.
-FUNC cpi_vse16_add
-.rep 200
-    vse16.v v0, (a0)
-    vadd.vv v10, v0, v0
-    vadd.vv v11, v0, v0
-    vadd.vv v12, v0, v0
-    vadd.vv v13, v0, v0
-.endr
-ret
+F_OP_LD_x8 vle64
+F_OP_LD_x8 vse64
+F_OP_LD_ADD vle64, vle64_add
+
+F_OP_LSE_x8 vlse8
+F_OP_LSE_x8 vlse16
+F_OP_LSE_x8 vlse32
+F_OP_LSE_x8 vlse64
+
+F_OP_LSE_x8 vsse8
+F_OP_LSE_x8 vsse16
+F_OP_LSE_x8 vsse32
+F_OP_LSE_x8 vsse64
 
 F_OP_VX vmul
 F_OP_VX_x1 vmul

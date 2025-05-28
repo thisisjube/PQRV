@@ -8,14 +8,48 @@
 
 uint64_t t[NTESTS];
 
+extern int init_vector_e8();
 extern int init_vector_e16();
 extern int init_vector_e32();
 extern int init_vector_e64();
-extern void cpi_vle16(int8_t *buf);
+// Vector unit-stride loads and stores
+extern void cpi_vle8(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                     int8_t *buf3);
+extern void cpi_vle8_add(int8_t *buf);
+extern void cpi_vse8(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                     int8_t *buf3);
+extern void cpi_vle16(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3);
 extern void cpi_vle16_add(int8_t *buf);
 extern void cpi_vse16(int8_t *buf0, int8_t *buf1, int8_t *buf2,
                       int8_t *buf3);
-extern void cpi_vse16_add(int8_t *buf);
+extern void cpi_vle32(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3);
+extern void cpi_vle32_add(int8_t *buf);
+extern void cpi_vse32(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3);
+extern void cpi_vle64(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3);
+extern void cpi_vle64_add(int8_t *buf);
+extern void cpi_vse64(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3);
+//   Vector strided loads and stores
+extern void cpi_vlse8(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3, size_t byte_stride);
+extern void cpi_vlse16(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
+extern void cpi_vlse32(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
+extern void cpi_vlse64(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
+extern void cpi_vsse8(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                      int8_t *buf3, size_t byte_stride);
+extern void cpi_vsse16(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
+extern void cpi_vsse32(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
+extern void cpi_vsse64(int8_t *buf0, int8_t *buf1, int8_t *buf2,
+                       int8_t *buf3, size_t byte_stride);
 
 extern void cpi_vaddvv();
 extern void cpi_vaddvx();
@@ -138,16 +172,101 @@ extern void cpi_vfsqrtv_x1();
 
 int main(void)
 {
-    int64_t buf[128];
-    int vec_len = init_vector_e16();
+    int64_t buf[1024];
+    int vec_len;
+    int8_t *buf_ptr = (int8_t *)buf;
+    int8_t *buf_ptr0 = buf_ptr, *buf_ptr1 = buf_ptr + 32,
+           *buf_ptr2 = buf_ptr + 64, *buf_ptr3 = buf_ptr + 96;
+
+    printf("Vector unit-stride loads and stores\n");
+    init_vector_e8();
+    PERF(cpi_vle8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vle8);
+    PERF(cpi_vle8_add((int8_t *)buf), cpi_vle8_add);
+    PERF(cpi_vse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vse8);
+    init_vector_e16();
+    PERF(cpi_vle16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vle16);
+    PERF(cpi_vle16_add((int8_t *)buf), cpi_vle16_add);
+    PERF(cpi_vse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vse16);
+    init_vector_e32();
+    PERF(cpi_vle32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vle32);
+    PERF(cpi_vle32_add((int8_t *)buf), cpi_vle32_add);
+    PERF(cpi_vse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vse32);
+    init_vector_e64();
+    PERF(cpi_vle64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vle64);
+    PERF(cpi_vle64_add((int8_t *)buf), cpi_vle64_add);
+    PERF(cpi_vse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3), cpi_vse64);
+    printf("Vector strided loads and stores\n");
+    init_vector_e8();
+    PERF(cpi_vlse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 1),
+         cpi_vlse8 with stride = 1);
+    PERF(cpi_vlse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 2),
+         cpi_vlse8 with stride = 2);
+    PERF(cpi_vlse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vlse8 with stride = 4);
+    PERF(cpi_vlse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vlse8 with stride = 8);
+    PERF(cpi_vsse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 1),
+         cpi_vsse8 with stride = 1);
+    PERF(cpi_vsse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 2),
+         cpi_vsse8 with stride = 2);
+    PERF(cpi_vsse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vsse8 with stride = 4);
+    PERF(cpi_vsse8(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vsse8 with stride = 8);
+    init_vector_e16();
+    PERF(cpi_vlse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 2),
+         cpi_vlse16 with stride = 2);
+    PERF(cpi_vlse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vlse16 with stride = 4);
+    PERF(cpi_vlse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vlse16 with stride = 8);
+    PERF(cpi_vlse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vlse16 with stride = 16);
+    PERF(cpi_vsse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 2),
+         cpi_vsse16 with stride = 2);
+    PERF(cpi_vsse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vsse16 with stride = 4);
+    PERF(cpi_vsse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vsse16 with stride = 8);
+    PERF(cpi_vsse16(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vsse16 with stride = 16);
+    init_vector_e32();
+    PERF(cpi_vlse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vlse32 with stride = 4);
+    PERF(cpi_vlse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vlse32 with stride = 8);
+    PERF(cpi_vlse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vlse32 with stride = 16);
+    PERF(cpi_vlse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 32),
+         cpi_vlse32 with stride = 32);
+    PERF(cpi_vsse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 4),
+         cpi_vsse32 with stride = 4);
+    PERF(cpi_vsse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vsse32 with stride = 8);
+    PERF(cpi_vsse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vsse32 with stride = 16);
+    PERF(cpi_vsse32(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 32),
+         cpi_vsse32 with stride = 32);
+    init_vector_e64();
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vlse64 with stride = 8);
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vlse64 with stride = 16);
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 32),
+         cpi_vlse64 with stride = 32);
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 64),
+         cpi_vlse64 with stride = 64);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
+         cpi_vsse64 with stride = 8);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
+         cpi_vsse64 with stride = 16);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 32),
+         cpi_vsse64 with stride = 32);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 64),
+         cpi_vsse64 with stride = 64);
+    vec_len = init_vector_e16();
     printf("init_vector_e16, the length of vector is %d bits\n",
            vec_len * 16);
-    PERF(cpi_vle16((int8_t *)buf), cpi_vle16);
-    PERF(cpi_vle16_add((int8_t *)buf), cpi_vle16_add);
-    PERF(cpi_vse16((int8_t *)buf, (int8_t *)&buf[2 * 1],
-                   (int8_t *)&buf[2 * 2], (int8_t *)&buf[2 * 3]),
-         cpi_vse16);
-    PERF(cpi_vse16_add((int8_t *)buf), cpi_vse16_add);
     cpi_vmvvv();
     PERF(cpi_vmvvv(), cpi_vmvvv);
     PERF(cpi_vmvvv_x1(), cpi_vmvvv_x1);

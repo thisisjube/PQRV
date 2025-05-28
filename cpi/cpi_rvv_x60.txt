@@ -1,3 +1,49 @@
+Vector unit-stride loads and stores
+cpi_vle8                       cycles/insts/CPI=4808/1607/2.99
+cpi_vle8_add                   cycles/insts/CPI=1407/1004/1.40
+cpi_vse8                       cycles/insts/CPI=5206/1607/3.24
+cpi_vle16                      cycles/insts/CPI=4808/1607/2.99
+cpi_vle16_add                  cycles/insts/CPI=1407/1004/1.40
+cpi_vse16                      cycles/insts/CPI=5206/1607/3.24
+cpi_vle32                      cycles/insts/CPI=4808/1607/2.99
+cpi_vle32_add                  cycles/insts/CPI=1407/1004/1.40
+cpi_vse32                      cycles/insts/CPI=5206/1607/3.24
+cpi_vle64                      cycles/insts/CPI=4808/1607/2.99
+cpi_vle64_add                  cycles/insts/CPI=1407/1004/1.40
+cpi_vse64                      cycles/insts/CPI=5206/1607/3.24
+Vector strided loads and stores
+cpi_vlse8 with stride = 1      cycles/insts/CPI=51209/1608/31.85
+cpi_vlse8 with stride = 2      cycles/insts/CPI=51209/1608/31.85
+cpi_vlse8 with stride = 4      cycles/insts/CPI=51209/1608/31.85
+cpi_vlse8 with stride = 8      cycles/insts/CPI=51209/1608/31.85
+cpi_vsse8 with stride = 1      cycles/insts/CPI=51209/1608/31.85
+cpi_vsse8 with stride = 2      cycles/insts/CPI=51209/1608/31.85
+cpi_vsse8 with stride = 4      cycles/insts/CPI=51209/1608/31.85
+cpi_vsse8 with stride = 8      cycles/insts/CPI=51209/1608/31.85
+cpi_vlse16 with stride = 2     cycles/insts/CPI=25609/1608/15.93
+cpi_vlse16 with stride = 4     cycles/insts/CPI=25609/1608/15.93
+cpi_vlse16 with stride = 8     cycles/insts/CPI=25609/1608/15.93
+cpi_vlse16 with stride = 16    cycles/insts/CPI=25609/1608/15.93
+cpi_vsse16 with stride = 2     cycles/insts/CPI=26009/1608/16.17
+cpi_vsse16 with stride = 4     cycles/insts/CPI=25609/1608/15.93
+cpi_vsse16 with stride = 8     cycles/insts/CPI=26408/1608/16.42
+cpi_vsse16 with stride = 16    cycles/insts/CPI=29607/1608/18.41
+cpi_vlse32 with stride = 4     cycles/insts/CPI=12809/1608/7.97
+cpi_vlse32 with stride = 8     cycles/insts/CPI=12809/1608/7.97
+cpi_vlse32 with stride = 16    cycles/insts/CPI=12809/1608/7.97
+cpi_vlse32 with stride = 32    cycles/insts/CPI=12809/1608/7.97
+cpi_vsse32 with stride = 4     cycles/insts/CPI=12809/1608/7.97
+cpi_vsse32 with stride = 8     cycles/insts/CPI=12815/1608/7.97
+cpi_vsse32 with stride = 16    cycles/insts/CPI=16007/1608/9.95
+cpi_vsse32 with stride = 32    cycles/insts/CPI=15209/1608/9.46
+cpi_vlse64 with stride = 8     cycles/insts/CPI=6409/1608/3.99
+cpi_vlse64 with stride = 16    cycles/insts/CPI=6409/1608/3.99
+cpi_vlse64 with stride = 32    cycles/insts/CPI=6409/1608/3.99
+cpi_vlse64 with stride = 64    cycles/insts/CPI=6409/1608/3.99
+cpi_vsse64 with stride = 8     cycles/insts/CPI=6409/1608/3.99
+cpi_vsse64 with stride = 16    cycles/insts/CPI=6409/1608/3.99
+cpi_vsse64 with stride = 32    cycles/insts/CPI=7608/1608/4.73
+cpi_vsse64 with stride = 64    cycles/insts/CPI=6410/1608/3.99
 init_vector_e16, the length of vector is 256 bits
 cpi_vle16                      cycles/insts/CPI=6006/2004/3.00
 cpi_vle16_add                  cycles/insts/CPI=1407/1004/1.40
