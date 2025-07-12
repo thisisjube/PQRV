@@ -11,6 +11,8 @@
 uint64_t t[NTESTS];
 
 extern void init_f_registers(double *);
+extern void cpi_fld(double *);
+extern void cpi_fld_fadd(double *);
 extern void cpi_fadd();
 extern void cpi_fadd_x1();
 extern void cpi_fmul();
@@ -35,8 +37,10 @@ static double get_random_float_in_range(double a, double b)
 
 int main(void)
 {
-    double f0, f1;
+    double f0, f1, buf[128];
     f0 = get_random_float_in_range(1.0, 2.0);
+    PERF(cpi_fld(buf), cpi_fld);
+    PERF(cpi_fld_fadd(buf), cpi_fld_fadd);
     init_f_registers(&f0);
     PERF(cpi_fadd(), cpi_fadd);
     PERF(cpi_fadd_x1(), cpi_fadd_x1);

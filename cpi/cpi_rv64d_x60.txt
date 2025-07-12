@@ -1,6 +1,8 @@
+cpi_fld                        cycles/insts/CPI=2006/1604/1.25
+cpi_fld_fadd                   cycles/insts/CPI=1607/2004/0.80
 cpi_fadd                       cycles/insts/CPI=805/1603/0.50
 cpi_fadd_x1                    cycles/insts/CPI=6402/1603/3.99
-cpi_fmin                       cycles/insts/CPI=807/1603/0.50
+cpi_fmin                       cycles/insts/CPI=806/1603/0.50
 cpi_fmin_x1                    cycles/insts/CPI=6402/1603/3.99
 cpi_fsgnj                      cycles/insts/CPI=1605/1603/1.00
 cpi_fsgnj_x1                   cycles/insts/CPI=6402/1603/3.99

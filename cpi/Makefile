@@ -60,15 +60,15 @@ out/scp_speed:	\
 	$(SCP) $^ $(TARGET_USER)@$(TARGET_IP):$(TARGET_DIR)/
 	@echo 1 > $@
 
-out/cpi_rv32imb: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_im.S test_cpi.c
+out/cpi_rv32imb: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_im.S test_cpi_rv64imb.c
 	mkdir -p out
 	$(CC) $(CFLAGS_RV32IMB) $(filter %.c, $^) $(filter %.S, $^) -o $@
 
-out/cpi_rv64imb: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_im.S test_cpi.c
+out/cpi_rv64imb: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_im.S test_cpi_rv64imb.c
 	mkdir -p out
 	$(CC) $(CFLAGS_RV64IMB) $(filter %.c, $^) $(filter %.S, $^) -o $@
 
-out/cpi_rvv: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_v.S test_cpi.c
+out/cpi_rvv: $(SOURCES_COMMON) $(HEADERS_COMMON) test_rv_v.S test_cpi_rvv.c
 	mkdir -p out
 	$(CC) $(CFLAGS_RV64GCVB) $(filter %.c, $^) $(filter %.S, $^) -o $@
 

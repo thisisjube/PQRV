@@ -4,9 +4,19 @@
     fld f\n, (a0)
 .endm
 
-.globl init_f_registers
-.align 2
-init_f_registers:
+.macro FUNC name
+    .global \name
+    .align 2
+    \name:
+.endm
+
+.macro FUNC_END name
+    ret
+    .type \name, %function
+    .size \name, .-\name
+.endm
+
+FUNC init_f_registers
     fld_m 0
     fld_m 1
     fld_m 2
@@ -23,11 +33,37 @@ init_f_registers:
     fld_m 13
     fld_m 14
     fld_m 15
-ret
+FUNC_END init_f_registers
 
-.globl cpi_fadd
-.align 2
-cpi_fadd:
+FUNC cpi_fld
+.rep 200
+    fld f0, 8*0(a0)
+    fld f1, 8*1(a0)
+    fld f2, 8*2(a0)
+    fld f3, 8*3(a0)
+    fld f4, 8*4(a0)
+    fld f5, 8*5(a0)
+    fld f6, 8*6(a0)
+    fld f7, 8*7(a0)
+.endr
+FUNC_END cpi_fld
+
+FUNC cpi_fld_fadd
+.rep 200
+    fld f0, 8*0(a0)
+    fld f1, 8*1(a0)
+    fadd.d f2, f0, f1
+    fadd.d f3, f0, f1
+    fadd.d f4, f0, f1
+    fadd.d f5, f0, f1
+    fadd.d f6, f0, f1
+    fadd.d f7, f0, f1
+    fadd.d f8, f0, f1
+    fadd.d f9, f0, f1
+.endr
+FUNC_END cpi_fld_fadd
+
+FUNC cpi_fadd
 .rep 200
     fadd.d f0, f0, f0
     fadd.d f1, f1, f1
@@ -38,19 +74,15 @@ cpi_fadd:
     fadd.d f6, f6, f6
     fadd.d f7, f7, f7
 .endr
-ret
+FUNC_END cpi_fadd
 
-.globl cpi_fadd_x1
-.align 2
-cpi_fadd_x1:
+FUNC cpi_fadd_x1
 .rep 1600
     fadd.d f0, f0, f0
 .endr
-ret
+FUNC_END cpi_fadd_x1
 
-.globl cpi_fmin
-.align 2
-cpi_fmin:
+FUNC cpi_fmin
 .rep 200
     fmin.d f0, f0, f0
     fmin.d f1, f1, f1
@@ -61,19 +93,15 @@ cpi_fmin:
     fmin.d f6, f6, f6
     fmin.d f7, f7, f7
 .endr
-ret
+FUNC_END cpi_fmin
 
-.globl cpi_fmin_x1
-.align 2
-cpi_fmin_x1:
+FUNC cpi_fmin_x1
 .rep 1600
     fmin.d f0, f0, f0
 .endr
-ret
+FUNC_END cpi_fmin_x1
 
-.globl cpi_fsgnj
-.align 2
-cpi_fsgnj:
+FUNC cpi_fsgnj
 .rep 200
     fsgnj.d f0, f0, f0
     fsgnj.d f1, f1, f1
@@ -84,26 +112,20 @@ cpi_fsgnj:
     fsgnj.d f6, f6, f6
     fsgnj.d f7, f7, f7
 .endr
-ret
+FUNC_END cpi_fsgnj
 
-.globl cpi_fsgnj_x1
-.align 2
-cpi_fsgnj_x1:
+FUNC cpi_fsgnj_x1
 .rep 1600
     fsgnj.d f0, f0, f0
 .endr
-ret
+FUNC_END cpi_fsgnj_x1
 
-.globl pre_f0f1
-.align 2
-pre_f0f1:
+FUNC pre_f0f1
     fld f0, (a0)
     fld f1, (a1)
-ret
+FUNC_END pre_f0f1
 
-.globl cpi_fmul
-.align 2
-cpi_fmul:
+FUNC cpi_fmul
 .rep 200
     fmul.d f8,  f0, f1
     fmul.d f9,  f0, f1
@@ -114,19 +136,15 @@ cpi_fmul:
     fmul.d f14, f0, f1
     fmul.d f15, f0, f1
 .endr
-ret
+FUNC_END cpi_fmul
 
-.globl cpi_fmul_x1
-.align 2
-cpi_fmul_x1:
+FUNC cpi_fmul_x1
 .rep 1600
     fmul.d f0, f0, f1
 .endr
-ret
+FUNC_END cpi_fmul_x1
 
-.globl cpi_fmadd
-.align 2
-cpi_fmadd:
+FUNC cpi_fmadd
 .rep 200
     fmadd.d f10, f0, f1, f1
     fmadd.d f11, f0, f1, f1
@@ -137,19 +155,15 @@ cpi_fmadd:
     fmadd.d f16, f0, f1, f1
     fmadd.d f17, f0, f1, f1
 .endr
-ret
+FUNC_END cpi_fmadd
 
-.globl cpi_fmadd_x1
-.align 2
-cpi_fmadd_x1:
+FUNC cpi_fmadd_x1
 .rep 1600
     fmadd.d f0, f0, f1, f1
 .endr
-ret
+FUNC_END cpi_fmadd_x1
 
-.globl cpi_fdiv
-.align 2
-cpi_fdiv:
+FUNC cpi_fdiv
 .rep 200
     fdiv.d f8,  f0, f1
     fdiv.d f9,  f0, f1
@@ -160,19 +174,15 @@ cpi_fdiv:
     fdiv.d f14, f0, f1
     fdiv.d f15, f0, f1
 .endr
-ret
+FUNC_END cpi_fdiv
 
-.globl cpi_fdiv_x1
-.align 2
-cpi_fdiv_x1:
+FUNC cpi_fdiv_x1
 .rep 1600
     fdiv.d f0, f0, f1
 .endr
-ret
+FUNC_END cpi_fdiv_x1
 
-.globl cpi_fsqrt
-.align 2
-cpi_fsqrt:
+FUNC cpi_fsqrt
 .rep 200
     fsqrt.d f8,  f0
     fsqrt.d f9,  f0
@@ -183,12 +193,10 @@ cpi_fsqrt:
     fsqrt.d f14, f0
     fsqrt.d f15, f0
 .endr
-ret
+FUNC_END cpi_fsqrt
 
-.globl cpi_fsqrt_x1
-.align 2
-cpi_fsqrt_x1:
+FUNC cpi_fsqrt_x1
 .rep 1600
     fsqrt.d f0, f0
 .endr
-ret
+FUNC_END cpi_fsqrt_x1
