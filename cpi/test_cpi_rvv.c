@@ -172,7 +172,7 @@ extern void cpi_vfsqrtv_x1();
 
 int main(void)
 {
-    int64_t buf[1024];
+    int64_t buf[2048];
     int vec_len;
     int8_t *buf_ptr = (int8_t *)buf;
     int8_t *buf_ptr0 = buf_ptr, *buf_ptr1 = buf_ptr + 32,
@@ -256,14 +256,23 @@ int main(void)
          cpi_vlse64 with stride = 32);
     PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 64),
          cpi_vlse64 with stride = 64);
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 128),
+         cpi_vlse64 with stride = 128);
+    PERF(cpi_vlse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 256),
+         cpi_vlse64 with stride = 256);
     PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 8),
          cpi_vsse64 with stride = 8);
     PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 16),
          cpi_vsse64 with stride = 16);
-    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 32),
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr0 + 256 * 1, buf_ptr0 + 256 * 2,
+                    buf_ptr0 + 256 * 3, 32),
          cpi_vsse64 with stride = 32);
     PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 64),
          cpi_vsse64 with stride = 64);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 128),
+         cpi_vsse64 with stride = 128);
+    PERF(cpi_vsse64(buf_ptr0, buf_ptr1, buf_ptr2, buf_ptr3, 256),
+         cpi_vsse64 with stride = 256);
     vec_len = init_vector_e16();
     printf("init_vector_e16, the length of vector is %d bits\n",
            vec_len * 16);

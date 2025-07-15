@@ -40,10 +40,14 @@ cpi_vlse64 with stride = 8     cycles/insts/CPI=6409/1608/3.99
 cpi_vlse64 with stride = 16    cycles/insts/CPI=6409/1608/3.99
 cpi_vlse64 with stride = 32    cycles/insts/CPI=6409/1608/3.99
 cpi_vlse64 with stride = 64    cycles/insts/CPI=6409/1608/3.99
+cpi_vlse64 with stride = 128   cycles/insts/CPI=6409/1608/3.99
+cpi_vlse64 with stride = 256   cycles/insts/CPI=6409/1608/3.99
 cpi_vsse64 with stride = 8     cycles/insts/CPI=6409/1608/3.99
 cpi_vsse64 with stride = 16    cycles/insts/CPI=6409/1608/3.99
-cpi_vsse64 with stride = 32    cycles/insts/CPI=7608/1608/4.73
+cpi_vsse64 with stride = 32    cycles/insts/CPI=6409/1608/3.99
 cpi_vsse64 with stride = 64    cycles/insts/CPI=6410/1608/3.99
+cpi_vsse64 with stride = 128   cycles/insts/CPI=6409/1608/3.99
+cpi_vsse64 with stride = 256   cycles/insts/CPI=6409/1608/3.99
 init_vector_e16, the length of vector is 256 bits
 cpi_vle16                      cycles/insts/CPI=6006/2004/3.00
 cpi_vle16_add                  cycles/insts/CPI=1407/1004/1.40
