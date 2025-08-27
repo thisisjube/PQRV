@@ -32,9 +32,9 @@ CFLAGS_RV64IMB_REF 	= $(CFLAGS_COMMON) -march=rv64imac_zba_zbb -mabi=lp64
 CFLAGS_RV64IMV_REF 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64
 CFLAGS_RV64IMBV_REF = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64
 
-TARGET_IP 	= 192.168.123.99
-TARGET_USER = root
-TARGET_DIR  = /sharefs
+TARGET_IP 	= bpi-f3-0
+TARGET_USER = justus.bergermann
+TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
 
 RM = /bin/rm
 
@@ -47,11 +47,11 @@ SOURCES_RV64IMB	= $(KECCAKDIR)/fips202_rv64.c $(KECCAKDIR)/fips202_rv64imb.S
 SOURCES_RV64IMV	= $(KECCAKDIR)/fips202_rv64.c $(KECCAKDIR)/fips202x_rv64.c $(KECCAKDIR)/fips202_rv64im.S $(KECCAKDIR)/fips202_rv64v.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x3.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x4.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x5.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x6.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x8.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x10.S $(KECCAKDIR)/fips202_rv64imv_hybrid_x14.S
 SOURCES_RV64IMBV= $(KECCAKDIR)/fips202_rv64.c $(KECCAKDIR)/fips202x_rv64.c $(KECCAKDIR)/fips202_rv64imb.S $(KECCAKDIR)/fips202_rv64v.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x3.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x4.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x5.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x6.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x8.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x10.S $(KECCAKDIR)/fips202_rv64imbv_hybrid_x14.S
 
-SOURCES_COMMON 	= $(COMMONDIR)/cpucycles.c $(COMMONDIR)/speed_print.c
-HEADERS_COMMON 	= $(COMMONDIR)/cpucycles.h $(KECCAKDIR)/fips202.h $(KECCAKDIR)/fips202x.h $(COMMONDIR)/speed_print.h
+SOURCES_COMMON 	= $(COMMONDIR)/cpucycles.c $(COMMONDIR)/speed_print.c $(COMMONDIR)/perf.c
+HEADERS_COMMON 	= $(COMMONDIR)/cpucycles.h $(KECCAKDIR)/fips202.h $(KECCAKDIR)/fips202x.h $(COMMONDIR)/speed_print.h $(COMMONDIR)/perf.h
 
-SOURCES_REF 	= $(COMMONDIR)/cpucycles.c $(KECCAKDIR)/fips202_ref.c $(COMMONDIR)/speed_print.c
-HEADERS_REF 	= $(COMMONDIR)/cpucycles.h $(KECCAKDIR)/fips202.h $(COMMONDIR)/speed_print.h
+SOURCES_REF 	= $(COMMONDIR)/cpucycles.c $(KECCAKDIR)/fips202_ref.c $(COMMONDIR)/speed_print.c $(COMMONDIR)/perf.c
+HEADERS_REF 	= $(COMMONDIR)/cpucycles.h $(KECCAKDIR)/fips202.h $(COMMONDIR)/speed_print.h $(COMMONDIR)/perf.h
 
 .PHONY: all run_all clean
 

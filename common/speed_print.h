@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "perf.h"
 
 void print_results(const char *s, uint64_t *t, size_t tlen);
 void print_results_average(const char *s, uint64_t *t, size_t tlen);
@@ -18,8 +19,13 @@ uint64_t median(uint64_t *l, size_t llen);
         }                                                                 \
         instret = median(t, 10);                                          \
         for (int ii = 0; ii < NTESTS; ii++) {                             \
-            t[ii] = cpucycles();                                          \
-            FUNC;                                                         \
+            init_perf_events();                                          \
+            start_counting_events();                                     \
+            FUNC;                                                        \
+            stop_and_read_events();                                      \
+            t[ii] = get_total_cycles();                                  \
+            print_counter(); \
+            cleanup_perf_events();                                      \
         }                                                                 \
         cc_average = get_median(t, NTESTS);                               \
         printf("%-30s cycles/insts/CPI=%llu/%llu/%.2f\n", #LABEL,         \
@@ -35,12 +41,17 @@ uint64_t median(uint64_t *l, size_t llen);
         }                                                                \
         instret = median(t, 10);                                         \
         for (int ii = 0; ii < NTESTS; ii++) {                            \
-            t[ii] = cpucycles();                                         \
+            init_perf_events();                                          \
+            start_counting_events();                                     \
             FUNC;                                                        \
+            stop_and_read_events();                                      \
+            print_counter(); \
+            t[ii] = get_total_cycles();                                  \
+            cleanup_perf_events();                                      \
         }                                                                \
         cc_average = get_median(t, NTESTS);                              \
         oneway_cc = cc_average / N;                                      \
-        printf("%-20s cycles/insts/CPI/1-wayCC=%llu/%llu/%.2f/%llu\n",   \
+        printf("%-20s cyclessss/insts/CPI/1-wayCC=%llu/%llu/%.2f/%llu\n",   \
                #LABEL, (unsigned long long)cc_average,                   \
                (unsigned long long)instret, (float)cc_average / instret, \
                (unsigned long long)oneway_cc);                           \
