@@ -483,7 +483,7 @@ IMPL_TEST_SHA3(10)
 IMPL_TEST_SHA3(14)
 #endif
 
-#define NTESTS 10000
+#define NTESTS 10001
 
 uint64_t t[NTESTS];
 
