@@ -36,6 +36,10 @@ TARGET_IP 	= bpi-f3-0
 TARGET_USER = justus.bergermann
 TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
 
+#TARGET_IP 	= k230-0
+#TARGET_USER = root
+#TARGET_DIR  = /root/sha3-benchmarks
+
 RM = /bin/rm
 
 SOURCES_RV32IM  = $(KECCAKDIR)/fips202_rv32.c $(KECCAKDIR)/fips202_rv32im.S

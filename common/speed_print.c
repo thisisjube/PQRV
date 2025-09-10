@@ -33,7 +33,6 @@ static uint64_t average(uint64_t *t, size_t tlen)
 
     for (i = 0; i < tlen; i++)
         acc += t[i];
-
     return acc / tlen;
 }
 
@@ -47,8 +46,8 @@ void print_results(const char *s, uint64_t *t, size_t tlen)
         return;
     }
 
-    if (overhead == (uint64_t)-1)
-        overhead = cpucycles_overhead();
+    //if (overhead == (uint64_t)-1)
+    //    overhead = cpucycles_overhead();
 
     tlen--;
     for (i = 0; i < tlen; ++i)
@@ -68,8 +67,8 @@ void print_results_average(const char *s, uint64_t *t, size_t tlen)
         return;
     }
 
-    if (overhead == (uint64_t)-1)
-        overhead = cpucycles_overhead();
+    //if (overhead == (uint64_t)-1)
+    //   overhead = cpucycles_overhead();
 
     tlen--;
     for (i = 0; i < tlen; ++i)
@@ -89,8 +88,8 @@ uint64_t get_average(uint64_t *t, size_t tlen)
         return 0;
     }
 
-    if (overhead == (uint64_t)-1)
-        overhead = cpucycles_overhead();
+    //if (overhead == (uint64_t)-1)
+    //    overhead = cpucycles_overhead();
 
     tlen--;
     for (i = 0; i < tlen; ++i)
@@ -109,8 +108,8 @@ uint64_t get_median(uint64_t *t, size_t tlen)
         return 0;
     }
 
-    if (overhead == (uint64_t)-1)
-        overhead = cpucycles_overhead();
+    //if (overhead == (uint64_t)-1)
+    //    overhead = cpucycles_overhead();
 
     tlen--;
     for (i = 0; i < tlen; ++i)

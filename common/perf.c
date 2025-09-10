@@ -1,5 +1,5 @@
 #include "perf.h"
-#include "c908_events.h"
+#include "spacemitx60_events.h"
 
 struct perf_event_attr attr[NUM_EVENTS];
 uint64_t val1[NUM_EVENTS], val2[NUM_EVENTS];
@@ -79,12 +79,17 @@ void calc_average(int ITER_PER_TEST, int TEST_COUNT) {
   }
 }
 
-int get_total_cycles() {
+uint64_t get_total_cycles() {
+    //printf("Temp cycles: %lu", events_counter_list[15].count);
     return events_counter_list[15].count;
+}
+
+uint64_t get_total_instr() {
+    return events_counter_list[14].count;
 }
 
 void print_counter() {
   for (int i = 0; i < NUM_EVENTS; i++) {
-    printf("%s, %i \n", events_counter_list[i].name, events_counter_list[i].count);
+    printf("%s, %llu \n", events_counter_list[i].name, (unsigned long long)events_counter_list[i].count);
   }
 }

@@ -1,9 +1,11 @@
-#ifndef C908_EVENTS_H
-#define C908_EVENTS_H
+#ifndef SPACEMITX60_EVENTS_H
+#define SPACEMITX60_EVENTS_H
 
 #define NUM_EVENTS 16  // maximum 16 events at once possible
 
-// list of available events (not complete, see table 14.6 XuanTie-C908 manual)
+// list of available events
+// (see https://gitee.com/bianbu-linux/linux-6.6/tree/k1-bl-v2.2.y/tools/perf/pmu-events/arch/riscv/spacemit/x60)
+// not correct atm as only cycle and instruction counter are used
 enum events {
   L1_ICACHE_ACCESS = 0x1,
   L1_ICACHE_MISS = 0x36 ,
@@ -45,7 +47,7 @@ struct event_counter {
   enum events event;   // Event type
   const char *name;    // Event name
   int offset;          // Baseline correction
-  int count;           // Counter for occurrences
+  uint64_t count;      // Counter for occurrences
 };
 
 // Initialize an array of event_counter structs
@@ -77,4 +79,4 @@ struct event_counter events_counter_list[] = {
   {U_MODE_CYCLES, "U_MODE_CYCLES", 0},*/
 };
 
-#endif //C908_EVENTS_H
+#endif  // SPACEMITX60

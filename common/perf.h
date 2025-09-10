@@ -33,7 +33,9 @@ extern void cleanup_perf_events();
 
 extern void calc_average(int ITER_PER_TEST, int TEST_COUNT);
 
-extern int get_total_cycles();
+extern uint64_t get_total_cycles();
+
+extern uint64_t get_total_instr();
 
 extern void print_counter();
 
