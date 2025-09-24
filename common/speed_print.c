@@ -117,3 +117,18 @@ uint64_t get_median(uint64_t *t, size_t tlen)
 
     return median(t, tlen);
 }
+
+uint64_t cycles_overhead() {
+    uint64_t overhead_total = 0, overhead_avg = 0;
+    int N = 1000;
+    init_perf_events();
+    for(int i=0; i < N; i++) {
+        start_counting_events();
+        __asm__ volatile("");
+        stop_and_read_events();
+        overhead_total += get_total_cycles();
+    }
+    cleanup_perf_events();
+    overhead_avg = overhead_total / N;
+    return overhead_avg;
+}

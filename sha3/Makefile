@@ -33,13 +33,13 @@ CFLAGS_RV64IMB_REF 	= $(CFLAGS_COMMON) -march=rv64imac_zba_zbb -mabi=lp64
 CFLAGS_RV64IMV_REF 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64
 CFLAGS_RV64IMBV_REF = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64
 
-TARGET_IP 	= bpi-f3-0
-TARGET_USER = justus.bergermann
-TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
+#TARGET_IP 	= bpi-f3-0
+#TARGET_USER = justus.bergermann
+#TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
 
-#TARGET_IP 	= k230-0
-#TARGET_USER = root
-#TARGET_DIR  = /root/sha3-benchmarks
+TARGET_IP 	= k230-0
+TARGET_USER = root
+TARGET_DIR  = /root/sha3-benchmarks
 
 RM = /bin/rm
 
