@@ -8,20 +8,21 @@ KECCAKDIR		= .
 CFLAGS_COMMON 	= -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wredundant-decls \
   				  -Wshadow -Wpointer-arith -O3 -fomit-frame-pointer -static \
 				  -I$(COMMONDIR) -I$(KECCAKDIR)
+VLEN = 128
 
 CFLAGS_RV32IM 	= $(CFLAGS_COMMON) -march=rv32imac -mabi=ilp32 -DRV32=1
 CFLAGS_RV32IMB 	= $(CFLAGS_COMMON) -march=rv32imac_zbb -mabi=ilp32 -DRV32=1 -DBIT_INTERLEAVING
 CFLAGS_RV32IMV 	= $(CFLAGS_COMMON) -march=rv32imacv -mabi=ilp32 -DRV32=1 \
-	-DVECTOR128 -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5
+	-DVECTOR$(VLEN) -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5
 CFLAGS_RV32IMBV = $(CFLAGS_COMMON) -march=rv32imacv_zbb -mabi=ilp32 -DRV32=1 \
 	-DBIT_INTERLEAVING \
-	-DVECTOR128 -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5
+	-DVECTOR$(VLEN) -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5
 CFLAGS_RV64IM 	= $(CFLAGS_COMMON) -march=rv64imac -mabi=lp64
 CFLAGS_RV64IMB 	= $(CFLAGS_COMMON) -march=rv64imac_zba_zbb -mabi=lp64
 CFLAGS_RV64IMV 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64 \
-	-DVECTOR128 -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5 -DHYBRIDX6 -DHYBRIDX8 -DHYBRIDX10 -DHYBRIDX14
+	-DVECTOR$(VLEN) -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5 -DHYBRIDX6 -DHYBRIDX8 -DHYBRIDX10 -DHYBRIDX14
 CFLAGS_RV64IMBV = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64 \
-	-DVECTOR128 -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5 -DHYBRIDX6 -DHYBRIDX8 -DHYBRIDX10 -DHYBRIDX14
+	-DVECTOR$(VLEN) -DHYBRIDX3 -DHYBRIDX4 -DHYBRIDX5 -DHYBRIDX6 -DHYBRIDX8 -DHYBRIDX10 -DHYBRIDX14
 
 CFLAGS_RV32IM_REF 	= $(CFLAGS_COMMON) -march=rv32imac -mabi=ilp32 -DRV32=1
 CFLAGS_RV32IMB_REF 	= $(CFLAGS_COMMON) -march=rv32imac_zbb -mabi=ilp32 -DRV32=1
@@ -32,13 +33,13 @@ CFLAGS_RV64IMB_REF 	= $(CFLAGS_COMMON) -march=rv64imac_zba_zbb -mabi=lp64
 CFLAGS_RV64IMV_REF 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64
 CFLAGS_RV64IMBV_REF = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64
 
-TARGET_IP 	= bpi-f3-0
-TARGET_USER = justus.bergermann
-TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
+#TARGET_IP 	= bpi-f3-0
+#TARGET_USER = justus.bergermann
+#TARGET_DIR  = /home/justus.bergerman/sha3-benchmarks
 
-#TARGET_IP 	= k230-0
-#TARGET_USER = root
-#TARGET_DIR  = /root/sha3-benchmarks
+TARGET_IP 	= k230-0
+TARGET_USER = root
+TARGET_DIR  = /root/sha3-benchmarks
 
 RM = /bin/rm
 
