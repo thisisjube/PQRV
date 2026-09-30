@@ -19,7 +19,7 @@ CFLAGS_RV64IMV 	= $(CFLAGS_COMMON) -march=rv64imacv -mabi=lp64 -DVECTOR128 -DRV6
 CFLAGS_RV64IMBV = $(CFLAGS_COMMON) -march=rv64imacv_zba_zbb -mabi=lp64 -DVECTOR128 -DRV64=1
 CFLAGS_RV64GCVB = $(CFLAGS_COMMON) -march=rv64gcv_zba_zbb -mabi=lp64d -DVECTOR128 -DRV64=1
 
-TARGET_IP 	= 192.168.123.99
+TARGET_IP 	= k230-0
 TARGET_USER = root
 TARGET_DIR  = /sharefs
 
